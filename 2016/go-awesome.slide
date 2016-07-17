@@ -1,0 +1,163 @@
+Go is awesome
+Jule, 2016
+Tags: go, awesome, shit
+
+Ivan Prisyazhnyy
+Backend developer
+OSS advocate
+@JohnKoepi
+
+* Outline
+
+- History
+- What
+- Why
+- Maturity
+- Popularity
+- Features
+- Pros / Cons
+- Compiler
+- GC
+- Interop
+
+* History
+
+Go is an open source programming language created at Google in 2007
+by Robert Griesemer, Rob Pike, and Ken Thompson.
+
+- go1.7 is coming this year
+- go1.6 (released 2016/02/17)
+- go1.5 (released 2015/08/19)
+- go1.4 (released 2014/12/10)
+- go1.3 (released 2014/06/18)
+- go1.2 (released 2013/12/01)
+- go1.1 (released 2013/05/13)
+- go1 (released 2012/03/28)
+
+* Who
+
+- Ken Thompson - unix hacker, pre C lang
+- Rob Pike - limbo lang, unix and plan 9
+- Robert Griesemer - Java HotSpot VM at Sun
+
+* What
+
+.link http://commandcenter.blogspot.ru/2012/06/less-is-exponentially-more.html Less is exponentially more
+
+Rob Pike SF 2012: Although we expected C++ programmers
+to see Go as an alternative, instead most Go programmers
+come from languages like Python and Ruby.
+Very few come from C++.
+
+* Original problems
+
+- google scale
+- multithreading is hard
+- distributed systems are hard
+- long compilation (i.e. 45 minutes)
+- c++ hard, new standards - more undef behavior, more features
+
+* Features
+
+- regular syntax (don't need a symbol table to parse)
+- garbage collection (only)
+- no header files
+- explicit dependencies
+- no circular dependencies
+- constants are just numbers
+- int and int32 are distinct types
+- letter case sets visibility
+
+* Features
+
+- methods for any type (no classes)
+- no subtype inheritance (no subclasses)
+- package-level initialization and well-defined order of initialization
+- files compiled together in a package
+- package-level globals presented in any order
+- no arithmetic conversions (constants help)
+- interfaces are implicit (no "implements" declaration)
+- embedding (no promotion to superclass)
+
+* Features
+
+- methods are declared as functions (no special location)
+- methods are just functions
+- interfaces are just methods (no data)
+- methods match by name only (not by type)
+- no constructors or destructors
+- postincrement and postdecrement are statements, not expressions
+- no preincrement or predecrement
+- assignment is not an expression
+- evaluation order defined in assignment, function call (no "sequence point")
+
+* Features
+
+- no pointer arithmetic
+- memory is always zeroed
+- legal to take address of local variable
+- no "this" in methods
+- segmented stacks
+- no const or other type annotations
+- no templates
+- no exceptions
+- builtin string, slice, map
+- array bounds checking
+
+* Popularity
+
+- Google, for many projects, notably including download server dl.google.com
+- Netflix, for two portions of their server architecture
+- Docker
+- Dropbox, migrated some of their critical components from Python to Go
+- CloudFlare, for their delta-coding proxy Railgun, their distributed DNS service, as well as tools for cryptography, logging, stream processing, and accessing SPDY sites.
+- SoundCloud, for "dozens of systems"
+- CoreOS, a Linux-based operating system that utilizes Docker containers.
+- Couchbase, Query and Indexing services within the Couchbase Server
+- MongoDB, tools for administering MongoDB instances
+- Uber, for handling high volumes of geofence-based queries.
+
+and a lot more...
+
+* Popularity
+
+.link https://github.com/search?utf8=%E2%9C%93&q=language%3AGo&type=Repositories&ref=advsearch&l=Go&l= github/go
+
+- 135000 projects on github (2.5M - js, 2M - java, 500k - C/C++)
+- 25000 authors
+- clouds: docker, rkt, kubernetes, drone
+- distsys: consul, etcd
+- os: coreos
+- db: grafana, cockroarch, prometheus, dgraph
+- p2p: lantern
+- web frameworks: gin
+
+* Trending
+
+Trending in open source
+
+.link https://github.com/trending/go
+
+among c, c++, java, js, python and scala
+
+* Go proverbs
+
+Don't communicate by sharing memory, share memory by communicating.
+Concurrency is not parallelism.
+Channels orchestrate; mutexes serialize.
+The bigger the interface, the weaker the abstraction.
+Make the zero value useful.
+A little copying is better than a little dependency.
+With the unsafe package there are no guarantees.
+Clear is better than clever.
+Reflection is never clear.
+Errors are values.
+Don't just check errors, handle them gracefully.
+Design the architecture, name the components, document the details.
+Documentation is for users.
+Don't panic.
+
+.link https://go-proverbs.github.io/ from @rob_pikes's inspiring talk at Gopherfest SV 2015.
+
+: Proverbs from [@rob_pike's](https://twitter.com/rob_pike)
+: inspiring [talk at Gopherfest SV 2015 (video)](https://www.youtube.com/watch?v=PAAkCSZUG1c).
