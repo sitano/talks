@@ -345,23 +345,6 @@ Reduce tail latency using replicated back ends.
 Go functions have simple, synchronous signatures.
 The use of concurrency is encapsulated.
 
-* What just happened?
-
-In just a few simple transformations we used Go's concurrency primitives to convert a
-
-- slow
-- sequential
-- failure-sensitive
-
-program into one that is
-
-- fast
-- concurrent
-- replicated
-- robust.
-
-No locks. No condition variables. No futures. No callbacks.
-
 * Test framework built-in
 
 - Opinionated
