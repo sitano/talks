@@ -7,19 +7,22 @@ Backend developer
 OSS advocate
 @JohnKoepi
 
-* Outline
-
-- What
-- Why
-- Features
-- Details
-
 * History
 
 Go is an open source programming language created at Google in 2007
 by Robert Griesemer, Rob Pike, and Ken Thompson.
 
 .link http://golang.org
+
+* Retrospective
+
+- 1947 - Bell Labs, invention of transistor
+- 1954 - Fortran
+- 1960 - Multics
+- 1971 - C (Ken Thompson, 1989 - ANSI C)
+- 1983 - C++ (Bjarne Stroustrup, 1998 ISO/IEC)
+- 1995 - Java (James Gosling, 6 years 6 -> 7)
+- 2007 - Go (5 years to production ready release)
 
 * History
 
@@ -35,41 +38,36 @@ by Robert Griesemer, Rob Pike, and Ken Thompson.
 - go1.1 (released 2013/05/13)
 - go1 (released 2012/03/28)
 
-* Historical retrospective
-
-- 1947 - Bell Labs, invention of transistor
-- 1954 - Fortran
-- 1960 - Multics
-- 1971 - C (Ken Thompson, 1989 - ANSI C)
-- 1983 - C++ (Bjarne Stroustrup, 1998 ISO/IEC)
-- 1995 - Java (James Gosling, 6 years 6 -> 7)
-- 2007 - Go (5 years to production ready release)
-
 * Todays
+
+Hundreds of projects. Thousands of Go programmers. Millions of lines of Go code.
 
 - Google, for many projects, notably including download server dl.google.com
 - Netflix, for two portions of their server architecture
-- Docker
+- Docker, Kubernetes
 - Dropbox, migrated some of their critical components from Python to Go
-- CloudFlare, for their delta-coding proxy Railgun, their distributed DNS service, as well as tools for cryptography, logging, stream processing, and accessing SPDY sites.
+- CloudFlare, delta-coding proxy Railgun, dist DNS, cryptography, logging, stream processing, etc.
 - SoundCloud, for "dozens of systems"
 - CoreOS, a Linux-based operating system that utilizes Docker containers.
 - Couchbase, Query and Indexing services within the Couchbase Server
-- MongoDB, tools for administering MongoDB instances
 - Uber, for handling high volumes of geofence-based queries.
 
-and a lot more...
+* Every big company uses Go
 
-* Used for...
+.link http://golang.org/wiki/GoUsers
 
-.link https://github.com/search?utf8=%E2%9C%93&q=language%3AGo&type=Repositories&ref=advsearch&l=Go&l= github/go
+Aerospike, BBC Worldwide, Bitbucket, Booking.com, Core OS, Datadog, Digital Ocean, Docker, Dropbox, Facebook, Getty Images, GitHub, GOV.UK, Heroku, IBM, Intel, InfluxDB, Iron.io, Kubernetes, Medium, MongoDB, Mozilla services, Netflix, New York Times, pool.ntp.org, Rackspace, Shutterfly, SmugMug, SoundCloud, SpaceX, Square, Stack Exchange, Thomson Reuters Eikon, Tumblr, Twitch, Twitter, Uber, VMWare ...
+
+* Interesting OSS projects
+
+.link https://github.com/search?utf8=%E2%9C%93&q=language%3AGo&type=Repositories&ref=advsearch&l=Go&l= Go at GitHub
 
 - 135000 projects on github (2.5M - js, 2M - java, 500k - C/C++)
 - 25000 authors
 - clouds: docker, rkt, kubernetes, drone
 - distsys: consul, etcd
 - os: coreos
-- db: grafana, cockroarch, prometheus, dgraph
+- db: influxdb, cockroarch, prometheus, dgraph
 - p2p: lantern
 - web: gin
 
@@ -98,15 +96,105 @@ Very few come from C++.
 - Rob Pike - limbo lang, unix and plan 9
 - Robert Griesemer - Java HotSpot VM at Sun
 
-* What
-
 * Original problems
 
-- google scale
-- multithreading is hard
-- distributed systems are hard
-- long compilation (i.e. 45 minutes)
-- c++ hard, new standards - more undef behavior, more features
+- Google Scale
+- Multithreading is hard
+- Distributed systems are hard
+.link https://aphyr.com/ Aphyr - the CAP's superman, say hi to Jepsen
+- Long compilation times (i.e. 45 minutes)
+- C++ hard, new standards - more undef behavior, more features
+.link http://commandcenter.blogspot.ru/2012/06/less-is-exponentially-more.html Rob, on how its all started
+
+* So, Why Go?
+
+Go is an answer to problems of scale at Google.
+
+.image go-awesome/datacenter.jpg 500 _
+
+* Google's like System Scale
+
+- designed to scale to 10⁶⁺ machines
+- everyday jobs run on 1000s of machines
+- jobs coordinate, interact with others in the system
+- lots going on at once
+
+Solution: great support for concurrency
+
+.image go-awesome/gophercomplex6.jpg
+
+* A Second Google's Problem: Engineering Scale
+
+In 2011:
+
+- 5000+ developers across 40+ offices
+- 20+ changes per minute
+- 50% of code base changes every month
+- 50 million test cases executed per day
+- single code tree
+
+Solution: design the language for large code bases
+
+* Our scale
+
+Awesome Go for our scale...
+
+.image go-awesome/our-scale.jpg 500 _
+
+* The Language
+
+- C family (imperative, braces)
+- Statically typed
+- Garbage collected
+- Memory safe (nil references, runtime bounds checks)
+- Built-in concurrency
+- Explicit errors
+- Interfaces, Methods, Structs
+- Reflection
+- Strong tooling
+
+* Go differs from Java in several ways
+
+Fast, efficient for computers:
+
+- Programs compile to machine code.  There's no VM.
+- Control over memory layout, fewer indirections
+
+Fun, fast for humans:
+
+- Simple, concise syntax
+- Statically linked binaries
+- Function values and lexical closures
+- Built-in strings (UTF-8)
+- Built-in generic maps and arrays/slices
+- Built-in concurrency
+
+* Go intentionally leaves out many features
+
+- No classes
+- No inheritance
+- No constructors
+- No `final`
+- No exceptions
+- No annotations
+- No user-defined generics
+
+* Why does Go leave out those features?
+
+Clarity is critical.
+
+When reading code, it should be clear what the program will do.
+
+When writing code, it should be clear how to make the program do what you want.
+
+Sometimes this means writing out a loop instead of invoking an obscure function.
+
+(Don't DRY out.)
+
+For more background on design:
+
+- [[http://commandcenter.blogspot.com/2012/06/less-is-exponentially-more.html][Less is exponentially more (Pike, 2012)]]
+- [[http://talks.golang.org/2012/splash.article][Go at Google: Language Design in the Service of Software Engineering (Pike, 2012)]]
 
 * Features
 
@@ -155,11 +243,50 @@ Very few come from C++.
 - builtin string, slice, map
 - array bounds checking
 
-* Popularity
+* Code examples
 
-* Popularity
+* Go looks familiar
 
-* Trending
+Hello, world!
+
+.play go-awesome/hello/hello.go
+
+* Hello, web server
+
+.play go-awesome/hello/server.go
+
+Types follow names in declarations.
+Exported names are Capitalized.  Unexported names are not.
+
+* Test framework built-in
+
+- Opinionated
+- Unit tests
+- MT Performance benchmarks
+- Many more with mocking, bdd, ...
+
+* You don't need a debugger
+
+- GDB is not there yet
+- Delve, and some more
+- use printf("%+v\n", ...)
+- build-in profilers
+- stack unwinding
+
+* Go is designed for tooling
+
+Go tools meet you where you are.  There's no one "Go IDE".
+
+- IDE & editor integration: Eclipse, IntelliJ, VisualStudio, SublimeText, emacs, vim, ...
+- [[http://play.golang.org][play.golang.org]]: online playground
+- `go get`: dependency management + vendoring
+- `gofmt`: automatic formatting
+- `govet`: static code analysis
+- `goimports`: automatic updates of package imports
+- `gocode`: automatic completion
+- the `go` tool: automatic fetch & build
+- `guru`: static analysis, bug finding, code navigation
+- [[http://godoc.org][godoc.org]]: open source package index and docs
 
 * Go proverbs
 
@@ -182,3 +309,17 @@ Don't panic.
 
 : Proverbs from [@rob_pike's](https://twitter.com/rob_pike)
 : inspiring [talk at Gopherfest SV 2015 (video)](https://www.youtube.com/watch?v=PAAkCSZUG1c).
+
+* Where to Go next
+
+Take the Go Tour online.
+
+.link http://tour.golang.org
+
+Lots more material.
+
+.link http://golang.org/wiki/Learn
+
+Great community.
+
+.link http://golang.org/project
