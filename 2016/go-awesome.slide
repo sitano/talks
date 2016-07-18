@@ -9,8 +9,9 @@ OSS advocate
 
 * History
 
-Go is an open source programming language created at Google in 2007
-by Robert Griesemer, Rob Pike, and Ken Thompson.
+Go is an open source programming language created
+at Google in 2007 by Robert Griesemer, Rob Pike,
+Ken Thompson, Ian Lance Taylor and Russ Cox.
 
 .link http://golang.org
 
@@ -58,18 +59,18 @@ Hundreds of projects. Thousands of Go programmers. Millions of lines of Go code.
 
 Aerospike, BBC Worldwide, Bitbucket, Booking.com, Core OS, Datadog, Digital Ocean, Docker, Dropbox, Facebook, Getty Images, GitHub, GOV.UK, Heroku, IBM, Intel, InfluxDB, Iron.io, Kubernetes, Medium, MongoDB, Mozilla services, Netflix, New York Times, pool.ntp.org, Rackspace, Shutterfly, SmugMug, SoundCloud, SpaceX, Square, Stack Exchange, Thomson Reuters Eikon, Tumblr, Twitch, Twitter, Uber, VMWare ...
 
-* Interesting OSS projects
+* Getting excited
 
-.link https://github.com/search?utf8=%E2%9C%93&q=language%3AGo&type=Repositories&ref=advsearch&l=Go&l= Go at GitHub
+.link https://github.com/avelino/awesome-go awesome-go at github
 
 - 135000 projects on github (2.5M - js, 2M - java, 500k - C/C++)
 - 25000 authors
 - clouds: docker, rkt, kubernetes, drone
-- distsys: consul, etcd
+- distsys: consul, etcd, gokit, gorpc, grpc, glow
 - os: coreos
-- db: influxdb, cockroarch, prometheus, dgraph
+- db: influxdb, cockroarch, prometheus, dgraph, bolt
 - p2p: lantern
-- web: gin
+- web: http/2, websockets, gin, iris
 
 * Trending just now
 
@@ -89,6 +90,14 @@ Although we expected C++ programmers
 to see Go as an alternative, instead most Go programmers
 come from languages like Python and Ruby.
 Very few come from C++.
+
+* Node.JS will not save you
+
+"Go: 90% Perfect, 100% of the time" -bradfitz, 2014
+
+.image go-awesome/funfast.svg 500 _
+
+# Brad Fitzpatrick, GoCon Tokyo, May 2014
 
 * Authors are gods
 
@@ -141,9 +150,11 @@ Awesome Go for our scale...
 
 .image go-awesome/our-scale.jpg 500 _
 
+* But Go is good for everything on a backend
+
 * The Language
 
-- C family (imperative, braces)
+- C family (imperative, braces) compiled
 - Statically typed
 - Garbage collected
 - Memory safe (nil references, runtime bounds checks)
@@ -196,53 +207,6 @@ For more background on design:
 - [[http://commandcenter.blogspot.com/2012/06/less-is-exponentially-more.html][Less is exponentially more (Pike, 2012)]]
 - [[http://talks.golang.org/2012/splash.article][Go at Google: Language Design in the Service of Software Engineering (Pike, 2012)]]
 
-* Features
-
-- regular syntax (don't need a symbol table to parse)
-- garbage collection (only)
-- no header files
-- explicit dependencies
-- no circular dependencies
-- constants are just numbers
-- int and int32 are distinct types
-- letter case sets visibility
-
-* Features
-
-- methods for any type (no classes)
-- no subtype inheritance (no subclasses)
-- package-level initialization and well-defined order of initialization
-- files compiled together in a package
-- package-level globals presented in any order
-- no arithmetic conversions (constants help)
-- interfaces are implicit (no "implements" declaration)
-- embedding (no promotion to superclass)
-
-* Features
-
-- methods are declared as functions (no special location)
-- methods are just functions
-- interfaces are just methods (no data)
-- methods match by name only (not by type)
-- no constructors or destructors
-- postincrement and postdecrement are statements, not expressions
-- no preincrement or predecrement
-- assignment is not an expression
-- evaluation order defined in assignment, function call (no "sequence point")
-
-* Features
-
-- no pointer arithmetic
-- memory is always zeroed
-- legal to take address of local variable
-- no "this" in methods
-- segmented stacks
-- no const or other type annotations
-- no templates
-- no exceptions
-- builtin string, slice, map
-- array bounds checking
-
 * Code examples
 
 * Go looks familiar
@@ -258,12 +222,225 @@ Hello, world!
 Types follow names in declarations.
 Exported names are Capitalized.  Unexported names are not.
 
+# ... and many more from go4cpp
+
+* Communicating Sequential Processes (Hoare, 1978)
+
+Concurrent programs are structured as independent processes that
+execute sequentially and communicate by passing messages.
+
+Sequential execution is easy to understand.  Async callbacks are not.
+
+*Go*primitives:* goroutines, channels, and the `select` statement.
+
+* Goroutines
+
+Goroutines are like lightweight threads.
+
+They start with tiny stacks and resize as needed.
+
+Go programs can have hundreds of thousands of them.
+
+Start a goroutine using the `go` statement:
+
+  go f(args)
+
+The Go runtime schedules goroutines onto OS threads.
+
+Blocked goroutines don't use a thread.
+
+* Channels
+
+Channels provide communication between goroutines.
+
+  c := make(chan string)
+
+  // goroutine 1
+  c <- "hello!"
+
+  // goroutine 2
+  s := <-c
+  fmt.Println(s) // "hello!"
+
+* Select
+
+A `select` statement blocks until communication can proceed.
+
+  select {
+  case x := <-in:
+    fmt.Println("received", x)
+  case out <- v:
+    fmt.Println("sent", v)
+  
+}
+
+Only the selected case runs.
+
+* Example: Google Search (backend)
+
+Q: What does Google search do?
+
+A: Given a query, return a page of search results (and some ads).
+
+Q: How do we get the search results?
+
+A: Send the query to Web search, Image search, YouTube, Maps, News, etc., then mix the results.
+
+How do we implement this?
+
+* Google Search: A fake framework
+
+We can simulate a back end search with a random timeout up to 100ms.
+
+.code go-awesome/google/fake.go /START2/,/STOP2/
+
+* Google Search: Test the framework
+
+.play go-awesome/google-serial.go /func.main/,/}/ HLsearch
+
+* Google Search (serial)
+
+The `Search` function takes a query and returns a slice of `Results`.
+
+Search invokes the Web, Image, and Video searches serially, then constructs the `results` slice.
+
+.code go-awesome/google/serial.go /func Search/,/^}/
+.play go-awesome/google-serial.go /google.Search/
+
+* Google Search (parallel)
+
+Run the Web, Image, and Video searches concurrently, and wait for all results.
+
+The `func` literals are closures over `query` and `c`.
+
+.code go-awesome/google/parallel.go /func Search/,/^}/
+.play go-awesome/google-parallel.go /google.Search/
+
+* Google Search (timeout)
+
+Don't wait for slow servers.
+
+.code go-awesome/google/timeout.go /func Search/,/STOP/
+.play go-awesome/google-timeout.go /google.Search/ HLsearch
+
+* Avoid timeout
+
+Q: How do we avoid discarding results from slow servers?
+
+A: Replicate the servers.  Send requests to multiple replicas, and use the first response.
+
+.code go-awesome/google/first.go /func First/,/^}/
+
+* Using the First function
+
+.play go-awesome/first.go /func main/,/^}/
+
+* Google Search (replicated)
+
+Reduce tail latency using replicated back ends.
+
+.code go-awesome/google/first.go /START/,/STOP/
+.play go-awesome/google-replicated.go /google.Search/
+
+Go functions have simple, synchronous signatures.
+The use of concurrency is encapsulated.
+
+* What just happened?
+
+In just a few simple transformations we used Go's concurrency primitives to convert a
+
+- slow
+- sequential
+- failure-sensitive
+
+program into one that is
+
+- fast
+- concurrent
+- replicated
+- robust.
+
+No locks. No condition variables. No futures. No callbacks.
+
 * Test framework built-in
 
 - Opinionated
 - Unit tests
 - MT Performance benchmarks
 - Many more with mocking, bdd, ...
+
+* Compiler
+
+- native code
+- a lot of platforms out of the box
+- cross compilation
+- self compiled since 1.5
+- blazingly fast
+- smaller binaries
+- escape analysis
+- [[https://docs.google.com/document/d/1szwabPJJc4J-igUZU4ZKprOrNRNJug2JPD8OYi3i1K0/edit#heading=h.ywtmh4qacfis][new SSA backend]]
+
+* Garbage Collector in Go 1.6
+
+At [[http://www.infoq.com/presentations/go-gc-performance][QCon SF in November Rick Hudson]] gave an updated presentation which showed this comparison of Go 1.5 to the upcoming Go 1.6
+
+.image go-awesome/gc56.png 400 _
+
+_Yes,_that_is_gigabytes_on_the_X_axis_
+
+* Garbage Collector on tip
+
+Right now it's even better!
+
+.image go-awesome/gcgotip.png _ 600
+
+* Interop
+
+bind with plain asm
+
+	TEXT ·GetG(SB),NOSPLIT,$0-8
+	get_tls(CX)
+	MOVQ g(CX), AX
+	MOVQ AX, gp+0(FP)
+	RET
+
+* Interop
+
+bind with plain C with cgo
+
+	n, err := C.sqrt(-1)
+
+* Interop
+
+bind with inline C
+
+	// #cgo CFLAGS: -DPNG_DEBUG=1
+	// #cgo amd64 386 CFLAGS: -DX86=1
+	// #cgo LDFLAGS: -lpng
+	// #include <png.h>
+	import "C"
+
+* Interop
+
+- `cgo` works complex
+- syscalls are plain C calls as well
+- there are safety guarantees
+
+In short:
+
+- Go can pass a pointer to C
+- the referenced memory can't have pointers to Go allocated memory
+- C can't keep pointers to the memory after the call returns
+
+.link https://golang.org/cmd/cgo/
+
+* More on safety
+
+- race conditions checks
+- deadlocks checks
+- map, slices unsynced access checks
+- channels are safe
+- unsafe
 
 * You don't need a debugger
 
@@ -287,6 +464,35 @@ Go tools meet you where you are.  There's no one "Go IDE".
 - the `go` tool: automatic fetch & build
 - `guru`: static analysis, bug finding, code navigation
 - [[http://godoc.org][godoc.org]]: open source package index and docs
+
+* The community
+
+Code of Conduct announced on November 24th 2015
+
+Go meetups:
+
+- [[http://go-meetups.appspot.com]]
+
+Women Who Go - 7 chapters already!
+
+- [[http://www.womenwhogo.org]]
+
+* Conferences:
+
+- [[http://gophergala.com/][GopherGala]] Jan 22-24th (judging proposals now)
+- [[https://fosdem.org/2016/][FOSDEM]] Right here, right now. Hello!
+- [[http://gophercon.ae][GopherCon Dubai]], Feb 23rd
+- [[http://www.gophercon.in/][GopherCon India]], Feb 19-20th
+- [[https://gophercon.com/][Gophercon Denver]], Jul 11-13th
+- [[http://2016.dotgo.eu/][dotGo]], Nov 9th
+
+* Podcasts
+
+- [[https://radio-t.com/][radio-t]]
+- [[http://devzen.ru/][devzen]]
+- [[https://golangshow.com/][golangshow]]
+
+check #slack channels
 
 * Go proverbs
 
