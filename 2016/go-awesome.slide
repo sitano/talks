@@ -9,21 +9,22 @@ OSS advocate
 
 * Outline
 
-- History
 - What
 - Why
-- Maturity
-- Popularity
 - Features
-- Pros / Cons
-- Compiler
-- GC
-- Interop
+- Details
 
 * History
 
 Go is an open source programming language created at Google in 2007
 by Robert Griesemer, Rob Pike, and Ken Thompson.
+
+.link http://golang.org
+
+* History
+
+5 years to first stable release.
+3 more years of maturity, ~0 changes in syntax.
 
 - go1.7 is coming this year
 - go1.6 (released 2016/02/17)
@@ -34,20 +35,70 @@ by Robert Griesemer, Rob Pike, and Ken Thompson.
 - go1.1 (released 2013/05/13)
 - go1 (released 2012/03/28)
 
-* Who
+* Historical retrospective
+
+- 1947 - Bell Labs, invention of transistor
+- 1954 - Fortran
+- 1960 - Multics
+- 1971 - C (Ken Thompson, 1989 - ANSI C)
+- 1983 - C++ (Bjarne Stroustrup, 1998 ISO/IEC)
+- 1995 - Java (James Gosling, 6 years 6 -> 7)
+- 2007 - Go (5 years to production ready release)
+
+* Todays
+
+- Google, for many projects, notably including download server dl.google.com
+- Netflix, for two portions of their server architecture
+- Docker
+- Dropbox, migrated some of their critical components from Python to Go
+- CloudFlare, for their delta-coding proxy Railgun, their distributed DNS service, as well as tools for cryptography, logging, stream processing, and accessing SPDY sites.
+- SoundCloud, for "dozens of systems"
+- CoreOS, a Linux-based operating system that utilizes Docker containers.
+- Couchbase, Query and Indexing services within the Couchbase Server
+- MongoDB, tools for administering MongoDB instances
+- Uber, for handling high volumes of geofence-based queries.
+
+and a lot more...
+
+* Used for...
+
+.link https://github.com/search?utf8=%E2%9C%93&q=language%3AGo&type=Repositories&ref=advsearch&l=Go&l= github/go
+
+- 135000 projects on github (2.5M - js, 2M - java, 500k - C/C++)
+- 25000 authors
+- clouds: docker, rkt, kubernetes, drone
+- distsys: consul, etcd
+- os: coreos
+- db: grafana, cockroarch, prometheus, dgraph
+- p2p: lantern
+- web: gin
+
+* Trending just now
+
+Trending in open source
+
+.link https://github.com/trending/go
+
+among c, c++, java, js, python and scala
+
+* PHP will die
+
+.link http://commandcenter.blogspot.ru/2012/06/less-is-exponentially-more.html Less is exponentially more
+
+Rob Pike at SF 2012
+
+Although we expected C++ programmers
+to see Go as an alternative, instead most Go programmers
+come from languages like Python and Ruby.
+Very few come from C++.
+
+* Authors are gods
 
 - Ken Thompson - unix hacker, pre C lang
 - Rob Pike - limbo lang, unix and plan 9
 - Robert Griesemer - Java HotSpot VM at Sun
 
 * What
-
-.link http://commandcenter.blogspot.ru/2012/06/less-is-exponentially-more.html Less is exponentially more
-
-Rob Pike SF 2012: Although we expected C++ programmers
-to see Go as an alternative, instead most Go programmers
-come from languages like Python and Ruby.
-Very few come from C++.
 
 * Original problems
 
@@ -106,39 +157,9 @@ Very few come from C++.
 
 * Popularity
 
-- Google, for many projects, notably including download server dl.google.com
-- Netflix, for two portions of their server architecture
-- Docker
-- Dropbox, migrated some of their critical components from Python to Go
-- CloudFlare, for their delta-coding proxy Railgun, their distributed DNS service, as well as tools for cryptography, logging, stream processing, and accessing SPDY sites.
-- SoundCloud, for "dozens of systems"
-- CoreOS, a Linux-based operating system that utilizes Docker containers.
-- Couchbase, Query and Indexing services within the Couchbase Server
-- MongoDB, tools for administering MongoDB instances
-- Uber, for handling high volumes of geofence-based queries.
-
-and a lot more...
-
 * Popularity
 
-.link https://github.com/search?utf8=%E2%9C%93&q=language%3AGo&type=Repositories&ref=advsearch&l=Go&l= github/go
-
-- 135000 projects on github (2.5M - js, 2M - java, 500k - C/C++)
-- 25000 authors
-- clouds: docker, rkt, kubernetes, drone
-- distsys: consul, etcd
-- os: coreos
-- db: grafana, cockroarch, prometheus, dgraph
-- p2p: lantern
-- web frameworks: gin
-
 * Trending
-
-Trending in open source
-
-.link https://github.com/trending/go
-
-among c, c++, java, js, python and scala
 
 * Go proverbs
 
