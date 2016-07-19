@@ -232,7 +232,453 @@ Hello, world!
 Types follow names in declarations.
 Exported names are Capitalized.  Unexported names are not.
 
-# ... and many more from go4cpp
+* Go types
+
+- primitive types
+
+	int, uint, int8, uint8, ...
+	bool, string
+	float32, float64
+	complex64, complex128
+
+- structs
+
+	struct {
+		Name string
+		Age  int
+	}
+
+- slices and arrays
+
+	[]int, [3]string, []struct{ Name string }
+
+- maps
+
+	map[string]int
+
+* Kinds of types (continued)
+
+- pointers
+
+	*int, *Person
+
+- functions
+
+	func(int, int) int
+
+- channels
+
+	chan bool
+
+- interfaces
+
+	interface {
+		Start()
+		Stop()
+	}
+
+* Type declarations
+
+	type [name] [specification]
+
+`Person` is a `struct` type.
+
+	type Person struct {
+		name string
+		age  int
+	}
+
+`Celsius` is a `float64` type.
+
+	type Celsius float64
+
+* Function declarations
+
+	func [name] ([params]) [return value]
+	func [name] ([params]) ([return values])
+
+A sum function:
+
+	func sum(a int, b int) int {
+		return a + b
+	}
+
+A function with multiple return values:
+
+	func divMod(a, b int) (int, int) {
+		return a / b, a % b
+	}
+
+Made clearer by naming the return values:
+
+	func divMod(den, div int) (quo, rem int) {
+		return den / div, den % div
+	}
+
+* Method declarations
+
+	func ([receiver]) [name] ([params]) ([return values])
+
+A method on a struct:
+
+	func (p Person) IsMinor() bool {
+		return p.age < 18
+	}
+
+But also a method on a `float64`:
+
+	func (c Celsius) Freezing() bool {
+		return c <= 0
+	}
+
+_Constraint:_ Methods can be defined *only* on types declared in the same package.
+
+	// This won't compile
+	func (s string) Length() int { return len(s) }
+
+* Declaring variables
+
+Normal declaration:
+
+    var text string = "hello"
+
+You can omit types:
+
+    var text = "hello"
+
+And inside of functions:
+
+    text := "hello"
+
+Other types
+
+    a := 0                             // int
+    b := true                          // boolean
+    f := 1.0                           // float64
+    p := Person{"Francesc", "Campoy"}  // Person
+
+* No implicit numeric conversion
+
+Given types:
+
+    type Celsius float64
+
+    type Fahrenheit float64
+
+And the variables:
+
+    var freezing Fahrenheit = 32
+    var boiling Celsius = 100
+
+This code won't compile:
+
+    sauna := (freezing + boiling) / 2
+
+There's no implicit numeric conversion in Go.
+
+* Pointers
+
+Go has pointers:
+
+    var p *int
+    p = new(int)
+
+But no pointer arithmetics:
+
+    var p *int = &a[0]
+    var q = p+2            // invalid
+
+There's `new` but there's no `delete`.
+
+Memory is garbaged collected after it's no longer accessible.
+
+* Memory allocation
+
+The compiler decides where to allocate based on escape analysis.
+
+Using `new` doesn't imply using the heap:
+
+`stack.go`:
+
+    func get() int {
+        n := new(int)
+        return *n
+    }
+
+And not all values in the heap are created with `new`:
+
+`heap.go`:
+
+    func get() *int {
+        n := 4
+        return &n
+    }
+
+* Choosing what allocation you want
+
+You can *not* decide where a value is allocated.
+
+But you can see what kind of allocation is used:
+
+    $ go tool 6g -m stack.go
+
+    stack.go:3: can inline get
+    stack.go:4: get new(int) does not escape
+
+Compare to:
+
+    $ go tool 6g -m heap.go
+
+    heap.go:3: can inline get
+    heap.go:4: moved to heap: n
+    heap.go:5: &n escapes to heap
+
+* RAII
+
+_Resource_Acquisition_Is_Initialization_
+
+Provides:
+
+- encapsulation of acquisition and disposition of resources
+
+- exception safe
+
+An example:
+
+    void write_to_file (const std::string & message) {
+        // mutex to protect file access
+        static std::mutex mutex;
+
+        // lock mutex before accessing file
+        // at the end of the scope unlock mutex
+        std::lock_guard<std::mutex> lock(mutex);
+
+        // mutual exclusion access section
+        ...
+    }
+
+* RAII in Go: defer
+
+The `defer` statement:
+
+- schedules a function call at the end of the current function
+
+- stacks all deferred calls - last in first out
+
+    var m sync.Mutex
+
+    func writeToFile(msg string) error {
+        m.Lock()
+        defer m.Unlock()
+
+        // mutual exclusion access section
+    }
+
+* Inheritance vs Composition
+
+- Inheritance breaks encapsulation
+
+- Composition causes boilerplate to proxy all methods
+
+Example:
+
+    type Engine struct{}
+
+    func (e Engine) Start() { ... }
+    func (e Engine) Stop()  { ... }
+
+We want `Car` to be able to `Start` and `Stop` too.
+
+More detail in my talk [[http://talks.golang.org/2014/go4java.slide#32][Go for Javaneros]]
+
+* Struct embedding
+
+Composition + Proxy of selectors
+
+.play go-awesome/embedding.go /type/,
+
+* Struct embedding and the diamond problem
+
+What if two embedded fields have the same type?
+
+.play go-awesome/diamond.go /type/,
+
+* Struct embedding
+
+It looks like inheritance but _it_is_not_inheritance_.
+
+It is composition.
+
+Used to share implementations between different types.
+
+What if want to share behavior instead?
+
+* Interfaces
+
+An interface is a set of methods.
+
+In Java (C++ doesn't have interfaces)
+
+    interface Switch {
+        void open();
+        void close();
+    }
+
+In Go:
+
+	type OpenCloser interface {
+		Open()
+		Close()
+	}
+
+* Go: implicit satisfaction
+
+_If_a_type_defines_all_the_methods_of_an_interface,_the_type_satisfies_that_interface._
+
+Benefits:
+
+- fewer dependencies
+- no type hierarchy
+- organic composition
+
+* Structural subtyping
+
+Better than duck typing. Verified at compile time.
+
+.image go-awesome/duck.jpg 500 500
+
+* FuncDraw: an example on interfaces
+
+.image go-awesome/funcdraw.png 500 700
+
+* FuncDraw: package parser
+
+Package `parse` provides a parser of strings into functions.
+
+	func Parse(text string) (*Func, error) { ... }
+
+`Func` is a struct type, with an `Eval` method.
+
+	type Func struct { ... }
+
+	func (p *Func) Eval(x float64) float64 { ... }
+
+* FuncDraw: package draw
+
+Package draw generates images given a function.
+
+	func Draw(f *parser.Func) image.Image {
+		for x := start; x < end; x += inc {
+			y := f.Eval(x)
+			...
+		}
+	}
+
+`draw` depends on `parser`, which makes testing hard.
+
+* Breaking dependencies
+
+Let's use an interface instead
+
+	type Evaluable interface {
+		Eval(float64) float64
+	}
+
+	func Draw(f Evaluable) image.Image image.Image {
+		for x := start; x < end; x += inc {
+			y := f.Eval(x)
+			...
+		}
+	}
+
+* Struct embedding of interfaces
+
+Embedding an interface:
+
+- more types can be used
+- limits what is added to the embedding type
+
+Given:
+
+    type Person struct {
+        First string
+        Last  string
+        Age   int
+    }
+
+`Employee` exposes the `Age` of `Person`
+
+    type Employee struct {
+        Person
+    }
+
+    e := Employee{Person{"John", "Doe", 49}}
+
+* Choosing what to proxy
+
+But we could hide it by choosing an interface:
+
+    type Employee struct {
+        Namer
+    }
+
+    type Namer interface {
+        Name() string
+    }
+
+And we need to make `Person` satisfy `Namer`
+
+    func (e Person) Name() string { return e.First + e.Last }
+
+And the rest of the code still works:
+
+    e := Employee{Person{"John", "Doe", 49}}
+
+* Easy mocking of interfaces
+
+Given this function:
+
+.code go-awesome/mock.go /func/,/^}/
+
+How would you test it?
+
+* Easy mocking of interfaces
+
+`net.Conn` is an interface defined in the `net` package of the standard library.
+
+    type Conn interface {
+        Read(b []byte) (n int, err error)
+        Write(b []byte) (n int, err error)
+        Close() error
+        LocalAddr() Addr
+        RemoteAddr() Addr
+        SetDeadline(t time.Time) error
+        SetReadDeadline(t time.Time) error
+        SetWriteDeadline(t time.Time) error
+    }
+
+We need a fake `net.Conn`!
+
+* One solution
+
+We could define a new type that satisfies `net.Conn`
+
+    type fakeConn struct {}
+
+    func (c fakeConn) Read(b []byte) (n int, err error) {...}
+    func (c fakeConn) Write(b []byte) (n int, err error) {...}
+    func (c fakeConn) Close() error {...}
+    ...
+
+But, is there a better way?
+
+* The better way
+
+.code go-awesome/mock.go /type fakeConn/,/end_fake/
+
+And our test can look like:
+
+.play go-awesome/mock.go /func main/,
 
 * Communicating Sequential Processes (Hoare, 1978)
 
