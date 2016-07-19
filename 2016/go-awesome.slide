@@ -99,6 +99,16 @@ Very few come from C++.
 
 # Brad Fitzpatrick, GoCon Tokyo, May 2014
 
+* C++: no generics, no OOP
+
+.image go-awesome/whaaaat.jpg 500 _
+
+* But, there is a draft
+
+Proposal: Go should have generics
+
+.link https://github.com/golang/proposal/blob/master/design/15292-generics.md
+
 * Authors are gods
 
 - Ken Thompson - unix hacker, pre C lang
