@@ -1,0 +1,441 @@
+Shorts on Go
+Oct, 2016
+Tags: go, awesome, shit
+
+Ivan Prisyazhnyy
+Backend works
+@JohnKoepi
+
+* Go?
+
+Go is an open source programming language created
+at Google in 2007 by Robert Griesemer, Rob Pike,
+Ken Thompson, Ian Lance Taylor and Russ Cox.
+
+.link http://golang.org
+
+* Why?
+
+- be statically typed, scalable to large systems (as Java and C++);
+- be productive and readable, without too many mandatory keywords and repetition;
+- not require tooling, but support it well,
+- support networking and multiprocessing.
+
+* Language?
+
+- Compiled, Statically typed, C-like
+- Memory management, pointers, no pointers arithmetic
+- Structural typing
+- CSP-like concurrency
+
+* Mature
+
+- 2009 new language
+- 2012 1.0 (production ready, google, youtube, vitess)
+- 2018 1.8 (better runtime, http/2.0, ...)
+
+* No more Scala hype
+
+- 5 years ago companies choose Scala in place of PHP, Python, Ruby, Perl, ...
+- Today they choose Go: mail.ru, Lazada Rus, Mirantis, Bell, Epam, Luxsoft, Acronis, …
+
+.link https://kaliningrad.hh.ru/search/vacancy?text=go+language&clusters=true&enable_snippets=true&page=1 source hh.ru
+
+* Why exodus out of PHP
+
+- Scale, Costs
+- Go is nice and awesome easy (entry level is so low)
+- Tooling out of the box (fmt, vet, gen, ven, profilers, docs, detectors, ...)
+- Opionated, Code style
+
+_So, even 1C could rewrite 1C in Go_
+
+* Usage
+
+- Clouds, Datacenters, Servers
+- Google, Netflix, Docker, Kubernetes, Dropbox, CloudFlare, SoundCloud, CoreOS, Couchbase, Uber …
+- Go, Docker, Kubernetes, netstack, chaosmonkey, chain, rclone, bgp, ...
+
+.link http://golang.org/wiki/GoUsers GoUsers
+.link https://github.com/avelino/awesome-go awesome-go
+
+* Example 1
+
+	func main() {
+		fmt.Println("Started...")
+		http.HandleFunc("/hello", handle)
+		http.ListenAndServe("localhost:80", nil)
+	}
+
+	func handle(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintln(w, "Hello, 世界!")
+	}
+
+* Example 2
+
+	func main() {
+		bot, err := telebot.NewBot(os.Getenv("BOT_TOKEN"))
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		messages := make(chan telebot.Message)
+		bot.Listen(messages, 1*time.Second)
+
+		for message := range messages {
+			if message.Text == "/hi" {
+				bot.SendMessage(message.Chat,
+					"Hello, "+message.Sender.FirstName+"!", nil)
+			}
+		}
+	}
+
+* Survey 2016
+
+.link http://metropolitan.fi/files/2016-10/2016-european-software-development-salary-survey.pdf European Software Development Salary Survey 2016
+
+* Company experience
+
+* Что на входе?
+
+- Bare metal, облака, vm и контейнеры
+- Сотни серверов на Windows Server
+- Датацентры во всех регионах
+- Логические кластера (внутренние и кросс-физические)
+- Приложения на .NET, Windows specific
+- Разные роли приложений
+- Все это меняется в реальном времени
+
+* Что меняется?
+
+- Количество и качество серверов
+- Роли приложений
+- Границы кластеров
+
+* За чем нужно следить?
+
+- За здоровьем приложений
+- За сетевой связностью \ доступностью
+- За границами кластеров
+- За секретами
+- За метриками
+
+* Зачем?
+
+- Автоматизация и упрощение процессов
+- Частые выкладки
+- Надежность, Доступность
+- Бизнес требования
+- Аналитика по хозяйству
+
+* Как?
+
+- Мы берем стандартные инструменты. Какие стандартные инструменты есть у разработчиков в 2016 году для решения подобных задач? - Open Source и XaaS-ы.
+- Etcd, Serf, Consul, Zookeeper - service discovery
+- Vault, Azure Vault, Dropbox, AWS KMS, Keywhiz - секреты
+- Docker, Kubernetes, Mesos/Mesosphere, Nomad, … - абстракция и развертывание
+- Prometheus, InfluxDB, Bosun, Facette, Graphite, Collectd - ts / метрики
+
+* Что общего у этих инструментов?
+
+- 80% написано на Go, остальные на C/C++/Scala/Python
+- Дальше будет только “хуже”...
+
+* Решение
+
+- Docker, Nomad - абстракция и деплой
+- InfluxDB/Prometheus/Facette/CollectD - мониторинг
+- Vault - секреты
+- Consul - связность, service discovery/app dns, kv, lock, health checks, eventbus
+
+* +/-
+
+- Все написано на Go
+- Все написано примерно одними и теми же людьми, open source, хорошая интеграция
+- Consul отличный инструмент после того, как вы решаете сложность управления Consul кластером
+- Баги - вы фиксите их сами
+
+* Что мы сделали
+
+- Timeseries DB - in-house - rrd, препрометей, 80000 иопсов в диск без напрягов) Метрики пушатся.
+- Consul data cache - распределенный агрегатор, монитор и алертинг система. Собирает данные. Следит за часами. Следит за здоровьем. Связывает Consul, чат системы, алерт системы и является информационной системой.
+- Plugins server - синхронизирует сторонний код между облаками и серверами
+- Health checks - запускаются везде, проверяют порты и приложения
+
+* Go inperfections
+
+	> So Go is simply a throwback to pre-80s programming languages, and a perfect illustration of the frustrations that led to the development and extension of the C++/Java/C# programming languages. 
+
+.link http://talks.godoc.org/github.com/davecheney/presentations/gopher-puzzlers.slide Gopher Puzzlers - How well do you know your language? from 11 October 2016 by Dave Cheney
+.link http://talks.godoc.org/github.com/davecheney/presentations/writing-high-performance-go.slide Writing High Performance Go - GopherChina from 17 April 2016 by Dave Cheney
+.link http://talks.godoc.org/github.com/davecheney/presentations/seven.slide Seven ways to profile a Go program - GoBridge remote meetup from 22 September 2016 by Dave Cheney
+
+* Generics
+
+	type NewType []int
+	type NewStruct struct {}
+
+> No way
+
+* Dig a little deeper...
+
+[[https://docs.google.com/document/d/1vrAy9gMpMoS3uaVphB32uVXX4pi-HnNjkMEgyAHX4N4/edit][Summary of Go Generics Discussions]]
+
+And proceeding to YCombinator:
+
+[[https://news.ycombinator.com/item?id=8756683][YCombinator discussion on the summary]]
+
+And [[https://news.ycombinator.com/item?id=8757448][`Waps` commenting]]...
+
+	> Go has generics. For arrays, slices, channels, maps, and some "standard" library functions. Go has generic functions.
+
+So you can write
+
+	var X map[typeA]typeB
+
+> If you look at the compiler source, the type system has generics, to a large extent. It's simply not accessible to normal programmers, instead only allowed for golang's authors.
+
+* Does Go have polymorphic functions?
+
+Normally not, but…
+
+And Waps commenting...
+
+	> Go has polymorphic functions : append, make, copy …
+
+* Type parameters?
+
+	func make(Type, size IntegerType) Type
+		func new(Type) *Type
+	...
+
+> Golang even has functions with type parameters. Make and new being the obvious examples. Again, this is present in the type system (not just there, also in reflect, things like printf, ...). It's simply not made accessible to us lowly go programmers.
+
+* And, as if this is not bad enough…
+
+> Go cheats the type system in thoroughly non-obvious ways to get more C-like behaviours that obviously do not improve safety or programmer productivity.
+
+* Field attributes have loosy types too
+
+	type T struct {
+		V int `json: “v”`
+	}
+
+* Steve Jobs told students: 'Stay hungry. Stay foolish.'
+
+There is a
+
+[[http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/index.html][50 Shades of Go: Traps, Gotchas, and Common Mistakes for New Golang Devs]]
+
+Oh my gosh, I did not know Go is so bad… and we still successfully using it.
+
+* Arrays and Slices
+
+Arrays are values. Slices are views.
+
+	a := [2]string{"a", "b"}
+	b := []string{"a", "b"}
+	c := [...]string{"a", "b"}
+	d := make([]byte, 2, 2)
+
+Yeah, there is a difference. What is what???
+
+* Deep copy copy(src, dst)
+
+Каков результат?
+
+	arr := []int{1, 2, 3}
+	tmp := []int{}
+	copy(tmp, arr)
+	fmt.Println(tmp)
+	fmt.Println(arr)
+
+[[http://stackoverflow.com/questions/30182538/why-can-not-i-copy-a-slice-with-copy-in-golang][The builtin copy(dst, src) copies min(len(dst), len(src)) elements]]. WAT???
+
+* Map syntax
+
+	Map returns
+	var m map[int]string
+	for k, v := range m {}
+	X := m[“key”]
+	If _, ok := m[“key”] {}
+
+И над map нельзя сделать cap(m)!
+
+А в nil map нельзя писать, тогда как в пустой slice можно.
+
+* Currently goroutines are only preemptible at function call points.
+
+How bad it is?
+
+	> it's possible to write a tight loop (e.g., a numerical kernel or a spin on an atomic) with no calls or allocation that arbitrarily delays preemption.
+	> This can result in arbitrarily long pause times as the GC waits for all goroutines to stop.
+	> In unusual situations, this can even lead to deadlock when trying to stop the world.
+
+* No thread monitors
+
+- No control
+- No enlisting
+
+* For tight loops example
+
+	func main() {
+		runtime.GOMAXPROCS(1)
+
+		x := 0
+		go func() {
+			for {
+				x++
+			}
+		}()
+
+		runtime.Gosched()
+	}
+
+.link [runtime: tight loops should be preemptible #10958](https://github.com/golang/go/issues/10958)
+.link [runtime: tight loop hangs process completely after some time #15442](https://github.com/golang/go/issues/15442)
+
+* Syscalls are … ?
+
+	> a thread cannot both be executing code and be blocked on a syscall
+
+[[http://morsmachine.dk/go-scheduler][On The Go scheduler by Morsing]]
+
+synchronous.
+
+* Cgo
+
+Вызовы cgo реализованы через поток g0 согласно https://golang.org/src/runtime/cgocall.go
+
+.link https://blog.golang.org/c-go-cgo
+.link https://golang.org/cmd/cgo/
+
+Почему?
+
+	> assumed to be an operating system-allocated stack, so safe to run gcc-compiled code on
+
+.link http://blog.altoros.com/golang-internals-part-5-runtime-bootstrap-process.htm
+.link https://golang.org/src/runtime/proc.go
+.link http://grokbase.com/t/gg/golang-dev/13887fgfn8/what-is-g0 by Dmitry Viukov
+
+	> g0 is a special system goroutine.
+	> Each M (thread) has own g0.
+	> g0 executes scheduler code. I.e. when a goroutine finishes running,
+	> execution is switched to g0, g0 chooses next goroutine to run, and
+	> then execution switches to the new goroutine.
+	> g0 has relatively large stack (32K) and is intended to never grow it.
+	> g0 is also used for split stack management and GC.
+	> The other special goroutine is gsignal, it's used for signal handling.
+
+
+* Go routines exits (runtime.Exit/main, outer exit, no watch)
+
+Как завершится?
+
+	func main() {
+		runtime.Goexit()
+	}
+
+> fatal error: no goroutines (main called runtime.Goexit) - deadlock!
+
+* Closures out-of-scope var catch
+
+Что выведет?
+
+	func main() {
+		for i := 0; i < 10; i++ {
+			go func() {
+				fmt.Println(i)
+			}()
+
+
+			// defer fmt.Println(i)
+		}
+		runtime.Gosched()
+	}
+
+
+* Struct{} size and ref
+
+Каков размер struct{}?
+
+	type S struct {
+		a int
+		b struct{}
+	}
+
+	func main() {
+		var s S
+		fmt.Println(unsafe.Sizeof(struct{}{})) // 0
+		fmt.Println(unsafe.Sizeof(s.b)) // 0
+		fmt.Println(unsafe.Sizeof(s)) // 16
+		fmt.Println(unsafe.Sizeof(&s.b)) // 8
+		fmt.Printf("%p", &s) // +0
+		fmt.Printf("%p", &s.b) // +8
+	}
+
+* Mutability on value types
+
+Что выведет print?
+
+	type S struct {
+		a int
+	}
+
+	func (s S) inc() {
+		s.a++
+	}
+
+	func main() {
+		s := S{}
+		s.inc()
+		fmt.Printf("%v", &s)
+	}
+
+* Type coercion
+
+Скомпилируется ли код?
+
+	type S struct {
+		a int
+	}
+
+	func (s S) inc() {
+		s.a++
+	}
+
+	func (s *S) inc2() {
+		s.a++
+	}
+
+	func main() {
+		s := S{}
+		s.inc()
+		s.inc2()
+	}
+
+* Error interface = nil
+
+Каков вывод?
+
+	type E struct{}
+
+	func (e *E) Error() string {
+		return "error"
+	}
+
+	func main() {
+		var e error
+		fmt.Println(e == nil)
+
+		e = nil
+		fmt.Println(e == nil)
+
+		e = func() error {
+			var x *E // == nil
+			return x
+		}()
+		fmt.Println(e == nil)
+	}
+
+* Thank You
