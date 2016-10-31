@@ -1,79 +1,126 @@
-Shorts on Go
-Oct, 2016
+Go - язык будущего, которое уже наступило
+Октябрь, 2016
 Tags: go, awesome, shit
 
-Ivan Prisyazhnyy
-Backend engineer
+Присяжный Иван
+Серверный разработчик
 @JohnKoepi
+
+* Мой опыт
+
+- Инженер по облачной инфраструктуре в Exit Games - 2 года
+- Технический лид MusicWars - 6 лет
+- Разработчик на Microsoft-стэке - 2 года
+- и много лет до этого C, C++, PHP, JavaScript, .NET, ...
+
+Интересы: распределенные системы, бигдата, linux, open source
+
+.image go-intro/intro-miner.jpg
 
 : http://talks.godoc.org/github.com/sitano/talks/2016/go-intro.slide
 
-* Go?
+* Мы строим сервис в облаке
 
-Go is an open source programming language created
-at Google in 2007 by Robert Griesemer, Rob Pike,
-Ken Thompson, Ian Lance Taylor and Russ Cox.
+- Развитие, анализ, поддержка систем обслуживания кластеров
+- Автоматизация процессов разработки
+- Интеграция Open Source продуктов в инфраструктуру
+- Работа с сообществом, пачти, отчеты, ...
 
+.image go-intro/intro-clouds.png 400 _
+
+* Как управлять гетерогенным хозяйством?
+
+Разделять и властвовать
+
+.image go-intro/plant.jpg 200 _
+
+* В поиске универсальных инструментов
+
+- Прототипы строят на "быстрых" языках
+- Что выбрать для нового проекта?
+- Что выбрать для новой версии проекта?
+
+* Люди хотят простые ответы
+
+- Выбери самое лучшее
+
+* Компании тоже хотят просто и дешево
+
+* Критерии выбора
+
+- Продуктивность
+- Производительность
+- Гарантиями безопасности
+- Читаемость кода и легкость сопровождения
+- Накладные расходы
+- Область проблем - интернет приложения, сетевые сервисы (сетевые распределенные приложения в многопоточном окружении)
+
+* Решение
+
+- Взять лучшее из того, к чему все привыкли - C++ и Java
+- Выбросить лишнее, что накопилось за последние 20 лет.
+
+.image go-intro/golang2.png 400 _
+
+* Итог
+
+.background go-intro/goraster.png
+
+* Что есть Go?
+
+Go это компилируемый многопоточный язык программирования,
+разработанный компанией Google.
+
+Первоначальная разработка Go началась в сентябре 2007 года,
+а его непосредственным проектированием занимались
+Роберт Гризмер, Роб Пайк и Кен Томпсон[4],
+
+.image go-intro/gomate.png
 .link http://golang.org
 
-* Why?
+* Фичи-лист
 
-- be statically typed, scalable to large systems (as Java and C++);
-- be productive and readable, without too many mandatory keywords and repetition;
-- not require tooling, but support it well,
-- support networking and multiprocessing.
+- Компилируемый, статически типизированный, C-подобный язык
+- Автоматическое управление памятью, наличие безопасных указателей
+- Структурная система типов
+- CSP-подобная модель многопоточности
 
-* Language?
+* Взлет
 
-- Compiled, Statically typed, C-like
-- Memory management, pointers, no pointers arithmetic
-- Structural typing
-- CSP-like concurrency
-
-* Mature
-
-- 2009 new language
+- 2009 - Google открыл миру Go
 - 2012 1.0 (production ready, google, youtube, vitess)
 - 2018 1.8 (better runtime, http/2.0, ...)
 
-* No more Scala hype
+* 5 лет назад компании выбирали Scala вместо PHP, Python, Ruby, Perl, ...
 
-- 5 years ago companies choose Scala in place of PHP, Python, Ruby, Perl, ...
-- Today they choose Go: mail.ru, Lazada Rus, Mirantis, Bell, Epam, Luxsoft, Acronis, …
+* Сегодня они выбирают Go
+
+mail.ru, Lazada Rus, Mirantis, Bell, Epam, Luxsoft, Acronis, …
 
 .link https://kaliningrad.hh.ru/search/vacancy?text=go+language&clusters=true&enable_snippets=true&page=1 source hh.ru
 
-* Why exodus out of PHP
+Google, Netflix, Docker, Kubernetes, Dropbox, CloudFlare, SoundCloud, CoreOS, Couchbase, Uber …
 
-- Scale, Costs
-- Go is nice and awesome easy (entry level is so low)
-- Tooling out of the box (fmt, vet, gen, ven, profilers, docs, detectors, ...)
-- Opionated, Code style
+* Интересные проекты
 
-_So, even 1C could rewrite 1C in Go_
+Go, Docker, Kubernetes, netstack, chaosmonkey, chain, rclone, bgp, ...
 
-* Usage
+.image go-intro/chaos-monkey.png
 
-- Clouds, Datacenters, Servers
-- Google, Netflix, Docker, Kubernetes, Dropbox, CloudFlare, SoundCloud, CoreOS, Couchbase, Uber …
-- Go, Docker, Kubernetes, netstack, chaosmonkey, chain, rclone, bgp, ...
+* Итог
 
-.link http://golang.org/wiki/GoUsers GoUsers
-.link https://github.com/avelino/awesome-go awesome-go
+- Go мощный инструмент, которым легко начать пользоваться.
+- Go совершил революцию в области обслуживания микросервисных архитектур.
+- Go прошел период адаптации рынка. Есть проекты, которые написаны только благодаря ему.
+- Go помогает писать хорошие программы, но при этом он не совершенен
 
-* Example 1
+.image go-intro/popularity.png 400 _
 
-	func main() {
-		fmt.Println("Started...")
-		http.HandleFunc("/hello", handle)
-		http.ListenAndServe("localhost:80", nil)
-	}
+* 1С на Go???
 
-	func handle(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintln(w, "Hello, 世界!")
-	}
+.image go-intro/gomate2.png
 
-* Example 2
+* Пример
 
 	func main() {
 		bot, err := telebot.NewBot(os.Getenv("BOT_TOKEN"))
@@ -92,79 +139,11 @@ _So, even 1C could rewrite 1C in Go_
 		}
 	}
 
-* Survey 2016
+* Исследование 2016
 
 .link http://metropolitan.fi/files/2016-10/2016-european-software-development-salary-survey.pdf European Software Development Salary Survey 2016
 
-* Company experience
-
-* Что на входе?
-
-- Bare metal, облака, vm и контейнеры
-- Сотни серверов на Windows Server
-- Датацентры во всех регионах
-- Логические кластера (внутренние и кросс-физические)
-- Приложения на .NET, Windows specific
-- Разные роли приложений
-- Все это меняется в реальном времени
-
-* Что меняется?
-
-- Количество и качество серверов
-- Роли приложений
-- Границы кластеров
-
-* За чем нужно следить?
-
-- За здоровьем приложений
-- За сетевой связностью \ доступностью
-- За границами кластеров
-- За секретами
-- За метриками
-
-* Зачем?
-
-- Автоматизация и упрощение процессов
-- Частые выкладки
-- Надежность, Доступность
-- Бизнес требования
-- Аналитика по хозяйству
-
-* Как?
-
-- Мы берем стандартные инструменты. Какие стандартные инструменты есть у разработчиков в 2016 году для решения подобных задач? - Open Source и XaaS-ы.
-- Etcd, Serf, Consul, Zookeeper - service discovery
-- Vault, Azure Vault, Dropbox, AWS KMS, Keywhiz - секреты
-- Docker, Kubernetes, Mesos/Mesosphere, Nomad, … - абстракция и развертывание
-- Prometheus, InfluxDB, Bosun, Facette, Graphite, Collectd - ts / метрики
-
-* Что общего у этих инструментов?
-
-- 80% написано на Go, остальные на C/C++/Scala/Python
-- Дальше будет только “хуже”...
-
-* Решение
-
-- Docker, Nomad - абстракция и деплой
-- InfluxDB/Prometheus/Facette/CollectD - мониторинг
-- Vault - секреты
-- Consul - связность, service discovery/app dns, kv, lock, health checks, eventbus
-
-* +/-
-
-- Все написано на Go
-- Все написано примерно одними и теми же людьми, open source, хорошая интеграция
-- Consul отличный инструмент после того, как вы решаете сложность управления Consul кластером
-- Баги - вы фиксите их сами
-
-* Что мы сделали
-
-- Timeseries DB - in-house - rrd, препрометей, 80000 иопсов в диск без напрягов) Метрики пушатся.
-- Consul data cache - распределенный агрегатор, монитор и алертинг система. Собирает данные. Следит за часами. Следит за здоровьем. Связывает Consul, чат системы, алерт системы и является информационной системой.
-- Plugins server - синхронизирует сторонний код между облаками и серверами
-- Health checks - запускаются везде, проверяют порты и приложения
-
-* Go inperfections
+* Несовершенный Go, но очень хороший
 
 	> So Go is simply a throwback to pre-80s programming languages, and a perfect illustration of the frustrations that led to the development and extension of the C++/Java/C# programming languages. 
 
@@ -439,5 +418,3 @@ synchronous.
 		}()
 		fmt.Println(e == nil)
 	}
-
-* Thank You
