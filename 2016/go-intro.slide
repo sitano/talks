@@ -10,29 +10,36 @@ john.koepi@gmail.com
 
 * Кто я?
 
-- Облака
-- Сервера
-- Распределенные системы
-- Linux, Open Source
+- Linux, Open Source, Distributed Systems
 
-* Опыт
-
-- Инженер по облачной инфраструктуре в Exit Games - 2 года
-- Технический лидер на проекте MusicWars - 6 лет
-- Веб разработчик .NET - 2 года
-- и много лет до этого C, C++, PHP, JavaScript, .NET, ...
+.image go-intro/who-am-i.jpg
 
 : http://talks.godoc.org/github.com/sitano/talks/2016/go-intro.slide
 
+* Опыт
+
+- 2 - Инженер по облачной инфраструктуре в Exit Games (Go)
+- 6 - Технический лидер на проекте MusicWars (JVM)
+- 2 - Веб разработчик (.NET)
+- + много лет C, C++, PHP, JavaScript, .NET, ...
+
+: В те времена я писал плагины для jQuery...
+
 * Проблема
 
-* Поиск
+.background go-intro/map.jpg
+
+* Поиск - это проблема выбора
+
+.image go-intro/choice.jpg 340 _
 
 * Решение
 
-* Итог
+.image go-intro/open-source.png 420 _
 
-.background go-intro/goraster.png
+* Go for Go
+
+.background go-intro/gogo.jpg
 
 * Что есть Go?
 
@@ -48,7 +55,11 @@ Go это компилируемый многопоточный язык про�
 
 * C++ и Java без проблем
 
+.image go-intro/javacpp.jpg 500 _
+
 * Уже 4 года я большой
+
+.image go-intro/iambig.jpg 500 _
 
 * Пример кода 1
 
@@ -95,6 +106,8 @@ Go это компилируемый многопоточный язык про�
 
 * Бизнес needs costs reduction
 
+.image go-intro/costs.png 500 _
+
 * Компании
 
 mail.ru, Lazada Rus, Mirantis, Bell, Epam, Luxsoft, Acronis, …
@@ -104,6 +117,8 @@ Google, Netflix, Docker, Kubernetes, Dropbox, CloudFlare, SoundCloud, CoreOS, Co
 .link https://kaliningrad.hh.ru/search/vacancy?text=go+language&clusters=true&enable_snippets=true&page=1 source hh.ru
 
 * Awesome Go
+
+.background go-intro/awesome.jpg
 
 * Интересные проекты
 
@@ -125,6 +140,8 @@ Google, Netflix, Docker, Kubernetes, Dropbox, CloudFlare, SoundCloud, CoreOS, Co
 
 * Микросервисы
 
+.background go-intro/microservices.jpg
+
 * Go для облаков, как Java для бигдаты
 
 * Несовершенный Go, но очень хороший
@@ -135,12 +152,15 @@ Google, Netflix, Docker, Kubernetes, Dropbox, CloudFlare, SoundCloud, CoreOS, Co
 .link http://talks.godoc.org/github.com/davecheney/presentations/writing-high-performance-go.slide Writing High Performance Go - GopherChina from 17 April 2016 by Dave Cheney
 .link http://talks.godoc.org/github.com/davecheney/presentations/seven.slide Seven ways to profile a Go program - GoBridge remote meetup from 22 September 2016 by Dave Cheney
 
-* Generics
+* А где же фичи...
 
-	type NewType []int
-	type NewStruct struct {}
+- Generics?
+- Polymorphic functions?
+- Type parameters?
 
-> No way
+.image go-intro/wat1.jpg
+
+> Go cheats the type system in thoroughly non-obvious ways to get more C-like behaviours that obviously do not improve safety or programmer productivity.
 
 * Dig a little deeper...
 
@@ -159,32 +179,6 @@ So you can write
 	var X map[typeA]typeB
 
 > If you look at the compiler source, the type system has generics, to a large extent. It's simply not accessible to normal programmers, instead only allowed for golang's authors.
-
-* Does Go have polymorphic functions?
-
-Normally not, but…
-
-And Waps commenting...
-
-	> Go has polymorphic functions : append, make, copy …
-
-* Type parameters?
-
-	func make(Type, size IntegerType) Type
-		func new(Type) *Type
-	...
-
-> Golang even has functions with type parameters. Make and new being the obvious examples. Again, this is present in the type system (not just there, also in reflect, things like printf, ...). It's simply not made accessible to us lowly go programmers.
-
-* And, as if this is not bad enough…
-
-> Go cheats the type system in thoroughly non-obvious ways to get more C-like behaviours that obviously do not improve safety or programmer productivity.
-
-* Field attributes have loosy types too
-
-	type T struct {
-		V int `json: “v”`
-	}
 
 * Arrays and Slices
 
@@ -207,7 +201,11 @@ Yeah, there is a difference. What is what???
 	fmt.Println(tmp)
 	fmt.Println(arr)
 
+* Ouch
+
 [[http://stackoverflow.com/questions/30182538/why-can-not-i-copy-a-slice-with-copy-in-golang][The builtin copy(dst, src) copies min(len(dst), len(src)) elements]]. WAT???
+
+.image go-intro/wat2.jpg
 
 * Map syntax
 
@@ -284,7 +282,6 @@ synchronous.
 	> g0 is also used for split stack management and GC.
 	> The other special goroutine is gsignal, it's used for signal handling.
 
-
 * Go routines exits (runtime.Exit/main, outer exit, no watch)
 
 Как завершится?
@@ -293,11 +290,13 @@ synchronous.
 		runtime.Goexit()
 	}
 
+* DEADLOCK
+
 > fatal error: no goroutines (main called runtime.Goexit) - deadlock!
 
-* Closures out-of-scope var catch
+.image go-intro/lol.jpg
 
-Что выведет?
+* Closures out-of-scope var catch
 
 	func main() {
 		for i := 0; i < 10; i++ {
@@ -311,10 +310,7 @@ synchronous.
 		runtime.Gosched()
 	}
 
-
 * Struct{} size and ref
-
-Каков размер struct{}?
 
 	type S struct {
 		a int
@@ -333,8 +329,6 @@ synchronous.
 
 * Mutability on value types
 
-Что выведет print?
-
 	type S struct {
 		a int
 	}
@@ -349,31 +343,7 @@ synchronous.
 		fmt.Printf("%v", &s)
 	}
 
-* Type coercion
-
-Скомпилируется ли код?
-
-	type S struct {
-		a int
-	}
-
-	func (s S) inc() {
-		s.a++
-	}
-
-	func (s *S) inc2() {
-		s.a++
-	}
-
-	func main() {
-		s := S{}
-		s.inc()
-		s.inc2()
-	}
-
-* Error interface = nil
-
-Каков вывод?
+* error == nil?
 
 	type E struct{}
 
@@ -397,10 +367,6 @@ synchronous.
 
 * Стив Джобс завещал быть голодными
 
-There is a
-
 [[http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/index.html][50 Shades of Go: Traps, Gotchas, and Common Mistakes for New Golang Devs]]
 
-Oh my gosh, I did not know Go is so bad… and we still successfully using it.
-
-
+.image go-intro/50shades.jpg 500 _
