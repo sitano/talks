@@ -1,0 +1,396 @@
+Go Memory Model
+Jule, 2018
+Tags: go, memory, model
+
+Ivan Prisyazhnyy
+Software Engineer
+@JohnKoepi
+
+* Opinions are my own
+
+Anything on this or any subsequent slides may be a lie. Do
+not base your decisions on this talk. If you do, ask for
+professional help.
+
+: Do you like statements when people do not hold any responsibility?
+
+* A memory model?
+
+A thing from
+
+.link https://golang.org/ref/mem
+
+version of May 31, 2014
+
+* Why should we care?
+
+.code mm/print_ab.go /START OMIT/,/END OMIT/
+
+- Is that correct program?
+- What are possible outcomes?
+
+* Why should we care?
+
+.code mm/print_ab.go /START OMIT/,/END OMIT/
+
+- Is that correct program?
+- What are possible outcomes?
+- Is (2, 0) a possible outcome?
+
+* Why should we care?
+
+.code mm/wait_idiom.go /START OMIT/,/END OMIT/
+
+- Is that correct program?
+- What are possible outcomes?
+
+* What is a correct program?
+
+- Execution traces - histories,
+- Behaviours - the way in which program acts,
+- Outcomes - results.
+
+* Race Condition Free
+
+- A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered.
+- A program is correctly synchronized if and only if all sequentially consistent executions are free of data races.
+- If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent
+
+* Race Condition
+
+A race condition is the behavior of the system where the output
+is dependent on the sequence or timing of other uncontrollable events.
+It becomes a bug when events do not happen in the order the programmer intended.
+
+- The correctly synchronized program is data race free
+
+* Sequential Consistency
+
+Sequential Consistency (SC): (def.)
+«...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»
+
+- If a program has no data races, then all executions of the program will appear to be sequentially consistent.
+
+* How can we understand that the program is correct?
+
+Just make it DRF (data race free).
+
+- In order of doing so, you must made it correct under a memory model.
+- Memory models specifies which executions of the program are correct.
+
+* How can we understand that the program is correct?
+
+> Use memory model, Luke.
+
+- which programs are valid
+- what those valid programs can do
+- therefore what programmers can expect
+- therefore what compiler writers must ensure / can do
+
+* But why there are Race Conditions in the first place?
+
+* A Fairy Tale
+
+In a past good days everything was simple.
+
+Once upon a time…
+
+How do you make a program faster?
+
+    Buy newer hardware.
+
+Is a hardware or compiler optimization valid?
+
+    Yes, if valid programs don’t change behavior.
+    (And most programs are valid.)
+
+* An Evil Twist
+
+Hardware engineer’s magic spells stopped working.
+
+    New magic spell: stamp out more and more cores.
+
+Compiler and operating system engineers give us multithreaded programming.
+
+Now hardware, compiler optimizations change program behaviors.
+
+- multiple issue of instructions
+- out-of-order execution
+- speculative execution
+- optimizations on various levels
+- multiple core, caches
+
+* How can we get along?
+
+“Valid optimizations do not change the behavior of valid programs.”
+
+back to our code example:
+
+.code mm/wait_idiom.go /START OMIT/,/END OMIT/
+
+Can it ever print 0?
+
+* Can it ever print 0?
+
+“It depends.”
+
+.code mm/wait_idiom.go /START OMIT/,/END OMIT/
+
+In x86 assembly, no.
+In ARM/POWER assembly, yes.
+In most C compilers (even on x86), yes (or maybe it won’t even finish).
+
+* “It depends” is not a happy ending
+
+- Hardware
+- Compiler
+- Program
+
+* Hardware Memory Models
+
+* Litmus Test: Message Passing
+
+         var x, y int
+    ----------------------
+        T1    |      T2
+    ----------------------
+      x = 1   |  r1 = y
+      y = 2   |  r2 = x
+
+Can this program see r1 = 1, r2 = 0?
+
+* Message Passing w/ Sequential Consistency
+
+.html mm/sce_msg_pass.html
+
+Can this program see r1 = 1, r2 = 0?
+
+On sequentially consistent hardware: *no*.
+
+* Sequentially Consistent Hardware
+
+.image mm/hw_sc.png
+
+Maranget et al.,
+.link https://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test7.pdf “A Tutorial Introduction to the ARM and POWER Relaxed Memory Models”
+
+* x86 Hardware (Total Store Order)
+
+.image mm/hw_sto.png
+
+Maranget et al.,
+.link https://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test7.pdf “A Tutorial Introduction to the ARM and POWER Relaxed Memory Models”
+
+* Litmus Test: Message Passing
+
+         var x, y int
+    ----------------------
+        T1    |      T2
+    ----------------------
+      x = 1   |  r1 = y
+      y = 2   |  r2 = x
+
+Can this program see r1 = 1, r2 = 0?
+On x86 (or other TSO): *no*.
+
+    Thread 1’s writes are observed by other threads in original order.
+
+* Litmus Test: Message Passing
+
+         var x, y int
+    ----------------------
+        T1    |      T2
+    ----------------------
+      x = 1   |  r1 = y
+      y = 2   |  r2 = x
+
+Can this program see r1 = 0, r2 = 0?
+On sequentially consistent hw: *no*.
+On x86 (or other TSO): *yes*!
+
+    Thread 1’s local writes are not immediately visible in Thread 2 (and vice versa).
+
+* Memory Fences
+
+         var x, y int
+    ----------------------
+        T1    |      T2
+    ----------------------
+      x = 1   |  r1 = y
+      *fence* |  *fence*
+      y = 2   |  r2 = x
+
+Can this program see r1 = 0, r2 = 0? No.
+
+Memory fence ensures Thread 1’s write is globally visible before Thread 1’s read,
+and vice versa.
+
+Glossing over details.
+
+* Litmus Test: Independent Reads of Indep. Writes
+
+    Thread 1 | T2    | T3     | T4
+    ---------------------------------
+    x = 1    | y = 1 | r1 = x | r3 = y
+                       r2 = y | r4 = x
+
+Can this program see r1 = 1, r2 = 0, r3 = 1, r4 = 0?
+
+Can Thread 3 see x change before y but Thread 4 see the opposite?
+
+On sequentially consistent hw: no.
+On x86 (or other TSO): no.
+
+There is a total order over all stores to main memory.
+
+* ARM/POWER Hardware
+
+.image mm/hw_arm.png
+
+Maranget et al.,
+.link https://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test7.pdf “A Tutorial Introduction to the ARM and POWER Relaxed Memory Models”
+
+* Litmus Test: Message Passing
+
+         var x, y int
+    ----------------------
+        T1    |      T2
+    ----------------------
+      x = 1   |  r1 = y
+      y = 2   |  r2 = x
+
+Can this program see r1 = 1, r2 = 0?
+On x86 (or other TSO): *no*.
+On ARM/POWER: yes!
+
+    Thread 1’s writes may not be observed by other threads in original order.
+
+* Litmus Test: Store Buffering
+
+         var x, y int
+    ----------------------
+        T1    |      T2
+    ----------------------
+      x = 1   |  y = 1
+      r1 = y  |  r2 = x
+
+Can this program see r1 = 0, r2 = 0?
+On sequentially consistent hw: no.
+On x86 (or other TSO): yes!
+On ARM/POWER: yes!
+
+    Thread 1’s local writes are not immediately visible in Thread 2 (and vice versa).
+
+* Litmus Test: Independent Reads of Indep. Writes
+
+    Thread 1 | T2    | T3     | T4
+    ---------------------------------
+    x = 1    | y = 1 | r1 = x | r3 = y
+                       r2 = y | r4 = x
+
+Can this program see r1 = 1, r2 = 0, r3 = 1, r4 = 0?
+
+Can Thread 3 see x change before y but Thread 4 see the opposite?
+
+On sequentially consistent hw: no.
+On x86 (or other TSO): no.
+On ARM/POWER: yes!
+
+    Different threads may receive different writes in different orders.
+
+* Litmus Test: Coherence
+
+    Thread 1 | T2    | T3     | T4
+    ---------------------------------
+    x = 1    | y = 2 | r1 = x | r3 = x
+                       r2 = x | r4 = x
+
+Can this program see r1 = 1, r2 = 2, r3 = 2, r4 = 1?
+
+Can Thread 3 see x change before y but Thread 4 see the opposite?
+
+On sequentially consistent hw: no.
+On x86 (or other TSO): no.
+On ARM/POWER: yes!
+
+    Different threads may receive different writes in different orders.
+
+* Weak Ordering
+
+“Let a synchronization model be a set of constraints on memory accesses that
+specify how and when synchronization needs to be done.
+
+Hardware is weakly ordered with respect to a synchronization model if and only if
+it appears sequentially consistent to all software that obey the synchronization
+model.”
+
+— Adve and Hill, “Weak Ordering - A New Definition” (1990)
+
+TODO: notes
+
+* Data-Race-Free (DRF)
+
+Synchronization operations are (to hardware) recognizably different from ordinary
+operations.
+
+A program is data-race-free if for all idealized SC executions, any two ordinary
+memory accesses to the same location from different threads are either:
+
+- both reads
+- or separated by synchronization operations: one happens before the other
+
+* Data-Race-Free
+
+Adve and Hill, “Weak Ordering - A New Approach
+
+* Not Data-Race-Free
+
+* Compilers
+
+Significant freedom to rewrite code.
+Significant gaps in knowledge of execution.
+
+    w = 1
+    x = 2
+    r1 = y
+    r2 = z
+
+Compiled code fails (answers yes! to) every litmus test we’ve seen,
+including coherence!
+
+* Compiler Optimizations
+
+Is this a valid optimization?
+Compiler and language must be involved in multithreaded guarantees.
+Boehm, “Threads Cannot be Implemented as a Library” (2004):
+
+* Compilers optimizations example
+
+* So why MM?
+
+- what is mm and where it stands
+  - abstract machine
+- what types of MM exists
+- what is spec
+- how it is defined
+- what is executions, behaviour and etc
+- what are bh, so, po, ...
+
+* Go MM
+
+- not a spec
+- set expectations relaxed
+- what we have
+- what we don't have
+- sync/atomic not defined WAT
+- what to do with all that
+
+* Data races
+
+* Detection of data races
+
+* Race detector implementation
+
+* Links
+
+* Quotes
