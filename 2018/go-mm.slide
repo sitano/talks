@@ -459,9 +459,9 @@ the behavior of final implementation. They define all possible
 ways the program can possibly execute.
 
 : Executions in JMM:
-:
+
 : An execution E is described by a tuple < P, A, po, so, W, V, sw, hb >, comprising:
-:
+
 : P - a program
 : A - a set of actions
 : po - program order, which for each thread t, is a total order over all actions performed by t in A
@@ -470,7 +470,7 @@ ways the program can possibly execute.
 : V - a value-written function, which for each write w in A, gives V(w), the value written by w in E.
 : sw - synchronizes-with, a partial order over synchronization actions
 : hb - happens-before, a partial order over actions
-:
+
 : Note that the synchronizes-with and happens-before elements are uniquely determined by the other components of an execution and the rules for well-formed executions (§17.4.7).
 : An execution is happens-before consistent if its set of actions is happens-before consistent (§17.4.5).
 
@@ -485,7 +485,7 @@ ways the program can possibly execute.
 : 4. The execution is happens-before consistent (§17.4.6).
 : 5. The execution obeys synchronization-order consistency.
 :    For all volatile reads r in A, it is not the case that either so(r, W(r)) or that there exists a write w in A such that w.v = r.v and so(W(r), w) and so(w, r).
-:
+
 : + Causality requirements $17.4.8
 
 * Theory
@@ -513,45 +513,175 @@ Executions ≈ Actions ∪ Orders ∪ Consistency Rules
 
 Orders:
 
-- HB
-- PO
-- SO
+- Program Order (PO)
+
+: Among all the inter-thread actions performed by each thread t, the program order of t is a total order that reflects the order in which these actions would be performed according to the intra-thread semantics of t.
+
+- Synchronization Order (SO)
+
+: A synchronization order is a total order over all of the synchronization actions of an execution. For each thread t, the synchronization order of the synchronization actions (§17.4.2) in t is consistent with the program order (§17.4.3) of t.
+
+- Happens-Before (HB)
+
+: If we have two actions x and y, we write hb(x, y) to indicate that x happens-before y.
+: If x and y are actions of the same thread and x comes before y in program order, then hb(x, y).
+: There is a happens-before edge from the end of a constructor of an object to the start of a finalizer (§12.6) for that object.
+: If an action x synchronizes-with a following action y, then we also have hb(x, y).
+: If hb(x, y) and hb(y, z), then hb(x, z).
+
+"A set of synchronization edges, S, is sufficient if it is the minimal set such that the transitive closure of S with the program order determines all of the happens-before edges in the execution. This set is unique."
+
+.link https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4 JMM ($17.4.5)
 
 * Theory
 
 Executions ≈ Actions ∪ Orders ∪ Consistency Rules
 
-Rules:
+Consistency Rules:
 
-- Program - PO consistency
-- SO consistency
-- HB consistency
-- SO - PO consistency
+: A consistency rule that affects values observed by the actions.
+
+- PO consistency - total order of intra-thread actions. PO is consistent with the source code order in the original program.
+
+: PO consistency affects the structure of the execution.
+
+- SO consistency - covers all synchronization actions. SO is a total order of all SA.
+- SO - PO consistency - SW = SO + SO-PO. SW => Coherence (reads see only the latest write in). SW is a partial order.
+
+: Coherence (def.) : The writes to the single memory location appear to be in a total order consistent with program order
+
+- HB consistency - HB is a transitive closure over the union of PO and SW. HB is partial order too.
+
+: HB consistency: reads observe either: the last write in hb order, or any other write, not ordered by hb.
 
 * Theory
 
-- what is mm and where it stands
-  - abstract machine
-- what types of MM exists
-- what is spec
-- how it is defined
-- what is executions, behaviour and etc
-- what are bh, so, po, ...
+- HB + magic => causality
+- SO ≈ Sequential Consistency
 
-* Go MM
+: Sequential Consistency (SC): (def.) «...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»  Sequential Consistency is not always needed:
 
-- not a spec
-- set expectations relaxed
-- what we have
-- what we don't have
-- sync/atomic not defined WAT
-- what to do with all that
+Sequential Consistency is not always needed:
+
+- Extreme costs to get it in distributed systems
+- Most examples so far were fine with just Release/Acquire!
+
+: see JMM: Example 17.4.8-1. Happens-before Consistency Is Not Sufficient
+
+* Theory
+
+- A program is correctly synchronized if and only if all sequentially consistent executions are free of data races.
+- If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent
+
+* Why?
+
+    int a = 0
+    -----------------
+    a = 1   |   a = 2
+    r1 = a  |
+
+    ----------------------------------------------------
+
+    𝑤(𝑎, 1) −hb−> 𝑟(𝑎) : 1 ... 𝑤(𝑎, 2)
+    𝑤(𝑎, 1) -hb−> 𝑟(𝑎) : 2 ... 𝑤(𝑎, 2)      𝑟1 ∈ {1, 2}
+
+    Original -MM-> {Executions} -yield-> {Outcomes}
+    Program                                 ^
+      |                                     | (subset of)
+      \-impl-> {Impls subset} -yields-> {Results}
+
+                mov 1 → (a)                 𝑟1 ∈ {1}
+                mov 1 → (r1)
+
+* Go
+
+Is something at [[https://golang.org/ref/mem][golang/mem]] a spec?
+
+* Go
+
+Is something at [[https://golang.org/ref/mem][golang/mem]] a spec?
+
+- No
+
+* What's the point?
+
+Two purposes:
+
+- Make guarantees for programmers.
+- Allow compilers/hardware to make certain changes to programs.
+
+Ideally, perfectly balanced. In practice, more conservative: might do neither.
+
+Explicit concern: Leave room for future refinement, refraining from:
+
+- making debatable guarantees to programmers
+- allowing compilers/hardware to make debatable changes to programs
+
+* What we are given?
+
+"The Go memory model specifies the conditions under which reads of a variable in one goroutine can be guaranteed to observe values produced by writes to the same variable in a different goroutine."
+
+Nothing about consistency...
+or race conditions
+
+"Programs that modify data being simultaneously accessed by multiple goroutines must serialize such access."
+
+because hardware and compiler may do something...
+
+* How to serialize access?
+
+Use happens-before:
+
+- PO
+- HB
+- SO, SO-PO
+
+* What Synchronization-With order do we have?
+
+- If p imports q, q’s init happens before p’s.
+- Package main’s init happens before main.main
+- The go statement happens before the created goroutine’s execution
+- A send (or close) on a channel happens before the receive
+- Unlock happens before subsequent Lock
+
+TODO: examples
+
+* Hmmm...
+
+> Unlock happens before subsequent Lock
+
+SW is given in terms of language derivatives.
+
+sync/mutex is implemented with sync/atomic.
+
+* What about sync/atomic?
+
+?
+
+* What about sync/atomic?
+
+Package sync/atomic is conspicuously missing.
+
+Proposal: match Java volatile and C++ memory_order_seq_cst.
+
+- An atomic write happens before an atomic read that observes the write.
+- The outcome of atomic operations must be consistent with a total order over all atomic operations in the program.
+
+.link https://github.com/golang/go/issues/5045 doc: define how sync/atomic interacts with memory model #5045
+
+TODO: examples of atomics litmus tests
 
 * Data races
 
+TODO: examples of incorrect synchronization.
+
 * Detection of data races
 
+TODO
+
 * Race detector implementation
+
+TODO
 
 * Links
 
@@ -561,5 +691,6 @@ Rules:
 - "Close Encounters of The Java Memory Model Kind", Aleksey Shipilёv, 2016
 - "Java Memory Model Pragmatics (transcript)", Aleksey Shipilёv, 2014
 - "C++ Memory Model", https://en.cppreference.com/w/cpp/language/memory_model
+- [[https://github.com/golang/go/issues/5045][doc: define how sync/atomic interacts with memory model #5045]]
 
 * Quotes
