@@ -650,11 +650,28 @@ TODO: examples
 
 > Unlock happens before subsequent Lock
 
+* How the Mutex works as a memory barrier?
+
 SW is given in terms of language derivatives.
 
-sync/mutex is implemented with sync/atomic.
+* How the Mutex is implemented?
 
-* What about sync/atomic?
+    // Fast path: grab unlocked mutex.
+    if atomic.CompareAndSwapInt32(&m.state, 0, mutexLocked) {...}
+
+    // Long path:
+    runtime_canSpin() -> runtime_doSpin()
+    + starvation detection: runtime_nanotime()-waitStartTime > starvationThresholdNs
+    + lock fairness with LIFO/Q semaphore runtime_SemacquireMutex(&m.sema, lifo: waitStartTime != 0)
+    + race detection
+
+sync/mutex is implemented with sync/atomic only.
+
+* How the Mutex works as a memory barrier?
+
+the sync/atomics works as a memory barriers.
+
+* What about sync/atomic in mm?
 
 ?
 
@@ -670,6 +687,92 @@ Proposal: match Java volatile and C++ memory_order_seq_cst.
 .link https://github.com/golang/go/issues/5045 doc: define how sync/atomic interacts with memory model #5045
 
 TODO: examples of atomics litmus tests
+
+* How atomics works as a memory barrier?
+
+on x86/amd64
+
+    TEXT ·CompareAndSwapUint32(SB),NOSPLIT,$0-17
+        MOVQ	addr+0(FP), BP
+        MOVL	old+8(FP), AX
+        MOVL	new+12(FP), CX
+        LOCK                    <---------
+        CMPXCHGL	CX, 0(BP)
+        SETEQ	swapped+16(FP)
+        RET
+
+they use LOCK-prefixed instructions like CMPXCHG, XCHGQ, XADDL
+
+* How atomics works as a memory barrier?
+
+on x86/amd64
+
+Section 8.2.5:
+
+    The I/O instructions, locking instructions, the LOCK prefix, and serializing instructions force stronger ordering on the processor.
+
+Also from 8.2.5:
+
+    "Like the I/O and locking instructions, the processor waits until all previous instructions have been completed and all buffered writes have been drained to memory before executing the serializing instruction."
+
+.link https://stackoverflow.com/questions/50280857/do-locked-instructions-provide-a-barrier-between-weakly-ordered-accesses
+.link https://peeterjoot.wordpress.com/2009/12/04/intel-memory-ordering-fence-instructions-and-atomic-operations/
+
+* How atomics works as a memory barrier?
+
+on arm64
+
+    TEXT ·CompareAndSwapUint32(SB),NOSPLIT,$0-17
+        MOVD	addr+0(FP), R0
+        MOVW	old+8(FP), R1
+        MOVW	new+12(FP), R2
+    again:
+        LDAXRW	(R0), R3     <------------ implicit
+        CMPW	R1, R3
+        BNE	ok
+        STLXRW	R2, (R0), R3 <------------ rel/acq mem barrier
+        CBNZ	R3, again
+    ok:
+        CSET	EQ, R0
+        MOVB	R0, swapped+16(FP)
+        RET
+
+* How atomics works as a memory barrier?
+
+on arm
+
+    TEXT ·armCompareAndSwapUint32(SB),NOSPLIT,$0-13
+        ...
+    casloop:
+        // LDREX and STREX were introduced in ARMv6.
+        LDREX	(R1), R0
+        CMP	R0, R2
+        BNE	casfail
+        DMB_ISHST_7
+        STREX	R3, (R1), R0
+        CMP	$0, R0
+        BNE	casloop
+        MOVW	$1, R0
+        DMB_ISH_7  <--------- explicit memory barrier
+        MOVBU	R0, swapped+12(FP)
+        RET
+    casfail:
+        MOVW	$0, R0
+        MOVBU	R0, swapped+12(FP)
+        RET
+
+* How atomics works as a memory barrier?
+
+on arm
+
+- Load-Acquire (LDAR): All loads and stores that are after an LDAR in program order, and that match the shareability domain of the target address, must be observed after the LDAR.
+- Store-Release (STLR): All loads and stores preceding an STLR that match the shareability domain of the target address must be observed before the STLR.
+- There are also exclusive versions of the above, LDAXR and STLXR, available.
+
+.link https://developer.arm.com/products/architecture/a-profile/docs/100941/latest/barriers
+.link http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/CEGDBEJE.html
+.link https://stackoverflow.com/questions/21535058/arm64-ldxr-stxr-vs-ldaxr-stlxr
+.link http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/ch06s03s11.html ARM Cortext-A > Multi-processing systems > Synchronization
 
 * Data races
 
@@ -691,6 +794,17 @@ TODO
 - "Close Encounters of The Java Memory Model Kind", Aleksey Shipilёv, 2016
 - "Java Memory Model Pragmatics (transcript)", Aleksey Shipilёv, 2014
 - "C++ Memory Model", https://en.cppreference.com/w/cpp/language/memory_model
+
+* Links
+
 - [[https://github.com/golang/go/issues/5045][doc: define how sync/atomic interacts with memory model #5045]]
+- [[https://stackoverflow.com/questions/50280857/do-locked-instructions-provide-a-barrier-between-weakly-ordered-accesses]]
+- [[https://peeterjoot.wordpress.com/2009/12/04/intel-memory-ordering-fence-instructions-and-atomic-operations/]]
+- [[https://developer.arm.com/products/architecture/a-profile/docs/100941/latest/barriers]]
+- [[http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/CEGDBEJE.html]]
+- [[https://stackoverflow.com/questions/21535058/arm64-ldxr-stxr-vs-ldaxr-stlxr]]
+- [[http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/ch06s03s11.html][ARM Cortext-A > Multi-processing systems > Synchronization]]
 
 * Quotes
+
+TODO: ...
