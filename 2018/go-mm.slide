@@ -640,11 +640,58 @@ Use happens-before:
 
 - If p imports q, q’s init happens before p’s.
 - Package main’s init happens before main.main
-- The go statement happens before the created goroutine’s execution
-- A send (or close) on a channel happens before the receive
-- Unlock happens before subsequent Lock
 
-TODO: examples
+* What Synchronization-With order do we have?
+
+    var a string
+
+    func f() {
+        print(a)
+    }
+
+    func hello() {
+        a = "hello, world"
+        go f()
+    }
+
+- The go statement happens before the created goroutine’s execution
+
+* What Synchronization-With order do we have?
+
+    var c = make(chan int, 10)
+    var a string
+
+    func f() {
+        a = "hello, world"
+        c <- 0
+    }
+
+    func main() {
+        go f()
+        <-c
+        print(a)
+    }
+
+- A send (or close) on a channel happens before the receive
+
+* What Synchronization-With order do we have?
+
+    var l sync.Mutex
+    var a string
+
+    func f() {
+        a = "hello, world"
+        l.Unlock()
+    }
+
+    func main() {
+        l.Lock()
+        go f()
+        l.Lock()
+        print(a)
+    }
+
+- Unlock happens before subsequent Lock
 
 * Hmmm...
 
@@ -709,11 +756,14 @@ on x86/amd64
 
 Section 8.2.5:
 
-    The I/O instructions, locking instructions, the LOCK prefix, and serializing instructions force stronger ordering on the processor.
+    The I/O instructions, locking instructions, the LOCK prefix, and
+    serializing instructions force stronger ordering on the processor.
 
 Also from 8.2.5:
 
-    "Like the I/O and locking instructions, the processor waits until all previous instructions have been completed and all buffered writes have been drained to memory before executing the serializing instruction."
+    "Like the I/O and locking instructions, the processor waits until
+    all previous instructions have been completed and all buffered writes
+    have been drained to memory before executing the serializing instruction."
 
 .link https://stackoverflow.com/questions/50280857/do-locked-instructions-provide-a-barrier-between-weakly-ordered-accesses
 .link https://peeterjoot.wordpress.com/2009/12/04/intel-memory-ordering-fence-instructions-and-atomic-operations/
@@ -776,7 +826,38 @@ on arm
 
 * Data races
 
-TODO: examples of incorrect synchronization.
+    var a string
+
+    func hello() {
+        go func() { a = "hello" }()
+        print(a)
+    }
+
+> The exit of a goroutine is not guaranteed to happen before any event in the program.
+
+* Data races
+
+.code mm/print_ab.go /func f/,
+
+> it can happen that g prints 2 and then 0.
+
+* Data races
+
+.code mm/wait_idiom.go /func setup/,
+
+> there is no guarantee that, in doprint, observing the write to done implies observing the write to a. This version can (incorrectly) print an empty string instead of "hello, world".
+
+* Data races
+
+.code mm/twoprints.go /func setup/,
+
+> As before, there is no guarantee that, in main, observing the write to done implies observing the write to a, so this program could print an empty string too. Worse, there is no guarantee that the write to done will ever be observed by main, since there are no synchronization events between the two threads. The loop in main is not guaranteed to finish.
+
+* Data races
+
+.code mm/unsafe_construct.go /type T/,
+
+> Even if main observes g != nil and exits its loop, there is no guarantee that it will observe the initialized value for g.msg.
 
 * Detection of data races
 
