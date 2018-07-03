@@ -9,8 +9,9 @@ Software Engineer
 * Opinions are my own
 
 Anything on this or any subsequent slides may be a lie. Do
-not base your decisions on this talk. If you do, ask for
-professional help.
+not base your decisions on this talk.
+
+.link https://golang.org/ref/mem#tmp_1 don't be clever advice
 
 : Do you like statements when people do not hold any responsibility?
 
@@ -21,6 +22,18 @@ A thing from
 .link https://golang.org/ref/mem
 
 version of May 31, 2014
+
+* How to answer a question:
+
+What is a correct program?
+
+- Execution traces - histories of actions,
+- [[https://en.oxforddictionaries.com/definition/behaviour][Behaviours]] - the ways in which program acts,
+- Outcomes - results.
+
+: A program consists of actions which constitutes executions.
+: The executions outcomes with results. And the executions
+: constitutes program behaviors.
 
 * Why should we care?
 
@@ -44,25 +57,41 @@ version of May 31, 2014
 - Is that correct program?
 - What are possible outcomes?
 
-* What is a correct program?
-
-- Execution traces - histories,
-- Behaviours - the way in which program acts,
-- Outcomes - results.
-
-* Race Condition Free
-
-- A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered.
-- A program is correctly synchronized if and only if all sequentially consistent executions are free of data races.
-- If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent
-
 * Race Condition
 
-A race condition is the behavior of the system where the output
+"A race condition is the behavior of the system where the output
 is dependent on the sequence or timing of other uncontrollable events.
-It becomes a bug when events do not happen in the order the programmer intended.
+It becomes a bug when events do not happen in the order the programmer intended."
 
-- The correctly synchronized program is data race free
+.link https://en.wikipedia.org/wiki/Race_condition Wikipedia (def.)
+
+: some kind of external timing or ordering non-determinism
+
+* Data Race
+
+"a race condition caused by potentially concurrent operations on a shared memory location, of which at least one is a write."
+
+.link https://en.wikipedia.org/wiki/Race_condition#Software Wikipedia/Software/C++ x11
+
+Race conditions are about _events_, and the data races are about the events of memory  _accesses_.
+
+.link https://blog.regehr.org/archives/490 Race Condition vs. Data Race
+
+Race Conditions != Data Races,
+
+Data Races are bad.
+
+.link https://stackoverflow.com/questions/11276259/are-data-races-and-race-condition-actually-the-same-thing-in-context-of-conc
+
+The correctly synchronized program is data race free.
+
+* Data Race Free (DRF)
+
+- "A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered",
+- "A program is correctly synchronized if and only if all sequentially consistent executions are free of data races",
+- "If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent".
+
+.link https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4 JMM
 
 * Sequential Consistency
 
@@ -87,7 +116,7 @@ Just make it DRF (data race free).
 - therefore what programmers can expect
 - therefore what compiler writers must ensure / can do
 
-* But why there are Race Conditions in the first place?
+* But why there are " Conditions in the first place?
 
 * A Fairy Tale
 
@@ -622,7 +651,7 @@ Explicit concern: Leave room for future refinement, refraining from:
 "The Go memory model specifies the conditions under which reads of a variable in one goroutine can be guaranteed to observe values produced by writes to the same variable in a different goroutine."
 
 Nothing about consistency...
-or race conditions
+or data races
 
 "Programs that modify data being simultaneously accessed by multiple goroutines must serialize such access."
 
