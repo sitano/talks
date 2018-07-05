@@ -28,7 +28,7 @@ version of May 31, 2014
 What is a correct program?
 
 - Execution traces - histories of actions,
-- [[https://en.oxforddictionaries.com/definition/behaviour][Behaviours]] - the ways in which program acts,
+- [[https://en.oxforddictionaries.com/definition/behaviour][Behaviors]] - the ways in which program acts,
 - Outcomes - results.
 
 : A program consists of actions which constitutes executions.
@@ -98,7 +98,7 @@ The correctly synchronized program is data race free.
 Sequential Consistency (SC): (def.)
 «...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»
 
-- If a program has no data races, then all executions of the program will appear to be sequentially consistent.
+> If a program has no data races, then all executions of the program will appear to be sequentially consistent.
 
 * How can we understand that the program is correct?
 
@@ -116,7 +116,7 @@ Just make it DRF (data race free).
 - therefore what programmers can expect
 - therefore what compiler writers must ensure / can do
 
-* But why there are " Conditions in the first place?
+* But why there are data races in the first place?
 
 * A Fairy Tale
 
@@ -132,6 +132,8 @@ Is a hardware or compiler optimization valid?
 
     Yes, if valid programs don’t change behavior.
     (And most programs are valid.)
+
+.html mm/source_dave.html
 
 * An Evil Twist
 
@@ -149,6 +151,8 @@ Now hardware, compiler optimizations change program behaviors.
 - optimizations on various levels
 - multiple core, caches
 
+.html mm/source_dave.html
+
 * How can we get along?
 
 “Valid optimizations do not change the behavior of valid programs.”
@@ -159,21 +163,27 @@ back to our code example:
 
 Can it ever print 0?
 
+.html mm/source_dave.html
+
 * Can it ever print 0?
 
 “It depends.”
 
 .code mm/wait_idiom.go /START OMIT/,/END OMIT/
 
-In x86 assembly, no.
-In ARM/POWER assembly, yes.
-In most C compilers (even on x86), yes (or maybe it won’t even finish).
+In x86 assembly, *no*.
+In ARM/POWER assembly, *yes*.
+In most C compilers (even on x86), *yes* (or maybe it won’t even finish).
+
+.html mm/source_dave.html
 
 * “It depends” is not a happy ending
 
 - Hardware
 - Compiler
 - Program
+
+.html mm/source_dave.html
 
 * Hardware Memory Models
 
@@ -184,9 +194,16 @@ In most C compilers (even on x86), yes (or maybe it won’t even finish).
         T1    |      T2
     ----------------------
       x = 1   |  r1 = y
-      y = 2   |  r2 = x
+      y = 1   |  r2 = x
 
 Can this program see r1 = 1, r2 = 0?
+
+.html mm/source_dave.html
+
+* Sequential Consistency
+
+Sequential Consistency (SC): (def.)
+«...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»
 
 * Message Passing w/ Sequential Consistency
 
@@ -195,6 +212,8 @@ Can this program see r1 = 1, r2 = 0?
 Can this program see r1 = 1, r2 = 0?
 
 On sequentially consistent hardware: *no*.
+
+.html mm/source_dave.html
 
 * Sequentially Consistent Hardware
 
@@ -217,21 +236,23 @@ Maranget et al.,
         T1    |      T2
     ----------------------
       x = 1   |  r1 = y
-      y = 2   |  r2 = x
+      y = 1   |  r2 = x
 
 Can this program see r1 = 1, r2 = 0?
 On x86 (or other TSO): *no*.
 
     Thread 1’s writes are observed by other threads in original order.
 
-* Litmus Test: Message Passing
+.html mm/source_dave.html
+
+* Litmus Test: Store Buffering
 
          var x, y int
     ----------------------
         T1    |      T2
     ----------------------
-      x = 1   |  r1 = y
-      y = 2   |  r2 = x
+      x = 1   |  y = 1
+      r1 = y  |  r2 = x
 
 Can this program see r1 = 0, r2 = 0?
 On sequentially consistent hw: *no*.
@@ -239,22 +260,24 @@ On x86 (or other TSO): *yes*!
 
     Thread 1’s local writes are not immediately visible in Thread 2 (and vice versa).
 
+.html mm/source_dave.html
+
 * Memory Fences
 
          var x, y int
     ----------------------
         T1    |      T2
     ----------------------
-      x = 1   |  r1 = y
+      x = 1   |  y = 1
       *fence* |  *fence*
-      y = 2   |  r2 = x
+      r1 = 1  |  r2 = x
 
-Can this program see r1 = 0, r2 = 0? No.
+Can this program see r1 = 1, r2 = 0? No.
 
-Memory fence ensures Thread 1’s write is globally visible before Thread 1’s read,
+Memory fence ensures Thread 1’s write is globally visible before Thread 2’s read,
 and vice versa.
 
-Glossing over details.
+.html mm/source_dave.html
 
 * Litmus Test: Independent Reads of Indep. Writes
 
@@ -272,6 +295,8 @@ On x86 (or other TSO): no.
 
 There is a total order over all stores to main memory.
 
+.html mm/source_dave.html
+
 * ARM/POWER Hardware
 
 .image mm/hw_arm.png _ 450
@@ -286,13 +311,15 @@ Maranget et al.,
         T1    |      T2
     ----------------------
       x = 1   |  r1 = y
-      y = 2   |  r2 = x
+      y = 1   |  r2 = x
 
 Can this program see r1 = 1, r2 = 0?
-On x86 (or other TSO): *no*.
-On ARM/POWER: yes!
+On x86 (or other TSO): no.
+On ARM/POWER: *yes*!
 
     Thread 1’s writes may not be observed by other threads in original order.
+
+.html mm/source_dave.html
 
 * Litmus Test: Store Buffering
 
@@ -306,9 +333,11 @@ On ARM/POWER: yes!
 Can this program see r1 = 0, r2 = 0?
 On sequentially consistent hw: no.
 On x86 (or other TSO): yes!
-On ARM/POWER: yes!
+On ARM/POWER: *yes*!
 
     Thread 1’s local writes are not immediately visible in Thread 2 (and vice versa).
+
+.html mm/source_dave.html
 
 * Litmus Test: Independent Reads of Indep. Writes
 
@@ -319,30 +348,34 @@ On ARM/POWER: yes!
 
 Can this program see r1 = 1, r2 = 0, r3 = 1, r4 = 0?
 
-Can Thread 3 see x change before y but Thread 4 see the opposite?
+(Can Thread 3 see x change before y but Thread 4 see the opposite?)
 
 On sequentially consistent hw: no.
 On x86 (or other TSO): no.
-On ARM/POWER: yes!
+On ARM/POWER: *yes*!
 
     Different threads may receive different writes in different orders.
+
+.html mm/source_dave.html
 
 * Litmus Test: Coherence
 
     Thread 1 | T2    | T3     | T4
     ---------------------------------
-    x = 1    | y = 2 | r1 = x | r3 = x
+    x = 1    | x = 2 | r1 = x | r3 = x
                        r2 = x | r4 = x
 
 Can this program see r1 = 1, r2 = 2, r3 = 2, r4 = 1?
 
-Can Thread 3 see x change before y but Thread 4 see the opposite?
+(Can Thread 3 see x=1 before x=2 but Thread 4 see the opposite?)
 
 On sequentially consistent hw: no.
 On x86 (or other TSO): no.
-On ARM/POWER: yes!
+On ARM/POWER: *yes*!
 
     Different threads may receive different writes in different orders.
+
+.html mm/source_dave.html
 
 * Weak Ordering
 
@@ -352,6 +385,8 @@ specify how and when synchronization needs to be done.
 Hardware is weakly ordered with respect to a synchronization model if and only if
 it appears sequentially consistent to all software that obey the synchronization
 model.”
+
+.html mm/source_dave.html
 
 .link http://pages.cs.wisc.edu/~markhill/papers/isca90_drf0.pdf Adve and Hill, “Weak Ordering - A New Definition” (1990)
 
@@ -383,6 +418,8 @@ memory accesses to the same location from different threads are either:
 
 - both reads
 - or separated by synchronization operations: one _happens-before_ the other
+
+.html mm/source_dave.html
 
 * Data-Race-Free
 
@@ -418,6 +455,8 @@ sequentially consistent to all software that obey [DRF].”
 
 by definition of Weak Consistency
 
+.html mm/source_dave.html
+
 * Hardware weakly ordered by DRF
 
 Basically everything, given appropriate synchronization implementations
@@ -428,6 +467,8 @@ Basically everything, given appropriate synchronization implementations
 - ARM/POWER
 
 Guarantee that DRF implies appearance of SC: DRF-SC.
+
+.html mm/source_dave.html
 
 * Compilers
 
@@ -442,6 +483,8 @@ Significant gaps in knowledge of execution.
 Compiled code fails (answers *yes!* to) every litmus test we’ve seen,
 including coherence!
 
+.html mm/source_dave.html
+
 * Compiler Optimizations
 
 Is this a valid optimization?
@@ -452,6 +495,8 @@ Compiler and language must be involved in multithreaded guarantees.
 
 .link http://www.hpl.hp.com/techreports/2004/HPL-2004-209.pdf Boehm, “Threads Cannot be Implemented as a Library” (2004):
 
+.html mm/source_dave.html
+
 * Weak Ordering?
 
 “Hardware is weakly ordered with respect to a synchronization model if and only if
@@ -459,6 +504,8 @@ it appears sequentially consistent to all software that obey the synchronization
 model.”
 
 > Why not a programming language (implementation)?
+
+.html mm/source_dave.html
 
 * Memory model
 
