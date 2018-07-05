@@ -659,7 +659,12 @@ Sequential Consistency is not always needed:
     ----------------------------------------------------
 
     𝑤(𝑎, 1) −hb−> 𝑟(𝑎) : 1 ... 𝑤(𝑎, 2)
-    𝑤(𝑎, 1) -hb−> 𝑟(𝑎) : 2 ... 𝑤(𝑎, 2)      𝑟1 ∈ {1, 2}
+    𝑤(𝑎, 1) -hb−> 𝑟(𝑎) : 2 ... 𝑤(𝑎, 2)
+
+                    [w(a, 1), r(a): 1, w(a, 2)]
+                    [w(a, 1), w(a, 2), r(a): 2]
+
+                                            𝑟1 ∈ {1, 2}
 
     Original -MM-> {Executions} -yield-> {Outcomes}
     Program                                 ^
@@ -668,6 +673,8 @@ Sequential Consistency is not always needed:
 
                 mov 1 → (a)                 𝑟1 ∈ {1}
                 mov 1 → (r1)
+
+.html mm/source_alex.html
 
 * Go
 
@@ -693,6 +700,8 @@ Explicit concern: Leave room for future refinement, refraining from:
 - making debatable guarantees to programmers
 - allowing compilers/hardware to make debatable changes to programs
 
+.html mm/source_dave.html
+
 * What we are given?
 
 "The Go memory model specifies the conditions under which reads of a variable in one goroutine can be guaranteed to observe values produced by writes to the same variable in a different goroutine."
@@ -714,23 +723,44 @@ Use happens-before:
 
 * What Synchronization-With order do we have?
 
+    package q
+
+    func init() {}  <-hb-\
+                         |
+    ---                  |
+                         |
+    package p            |
+                         |
+    import "q"           |
+                         |
+    func init() {}   ----/
+
+
 - If p imports q, q’s init happens before p’s.
 - Package main’s init happens before main.main
+
+Valid executions:
+
+    [q.init..., p.init...]
 
 * What Synchronization-With order do we have?
 
     var a string
 
     func f() {
-        print(a)
-    }
-
-    func hello() {
-        a = "hello, world"
-        go f()
+        print(a)    ---hb---\
+    }                       |
+                            |
+    func hello() {          |
+        a = "hello, world"  |
+        go f()      <-------/
     }
 
 - The go statement happens before the created goroutine’s execution
+
+Valid executions:
+
+    [store(a, "hello, world"), read(a): "hello, world"]
 
 * What Synchronization-With order do we have?
 
@@ -738,17 +768,21 @@ Use happens-before:
     var a string
 
     func f() {
-        a = "hello, world"
-        c <- 0
-    }
-
-    func main() {
-        go f()
-        <-c
+        a = "hello, world" -\
+        c <- 0  <---------- | -\
+    }                      hb  |
+                            |  |
+    func main() {           |  |
+        go f()  <-----------/  |
+        <-c     ----hb---------/
         print(a)
     }
 
 - A send (or close) on a channel happens before the receive
+
+Valid executions:
+
+    [store(a, "..."), send(c, 0), recv(c): 0, read(a): "..."]
 
 * What Synchronization-With order do we have?
 
@@ -756,18 +790,22 @@ Use happens-before:
     var a string
 
     func f() {
-        a = "hello, world"
-        l.Unlock()
-    }
-
-    func main() {
-        l.Lock()
-        go f()
-        l.Lock()
+        a = "hello, world" -\
+        l.Unlock()  <------ | -\
+    }                       |  |
+                            |  |
+    func main() {           |  |
+        l.Lock()            |  |
+        go f()  <----hb-----/  |
+        l.Lock()    -----hb----/
         print(a)
     }
 
 - Unlock happens before subsequent Lock
+
+Valid executions:
+
+    [lock(l), store(a, "..."), unlock(l), lock(l), read(a): "..."]
 
 * Hmmm...
 
