@@ -949,17 +949,31 @@ on arm
 
 > The exit of a goroutine is not guaranteed to happen before any event in the program.
 
+Valid executions:
+
+    [read(a)]
+    [read(a), store(a)]
+    [store(a), read(a)]
+
 * Data races
 
 .code mm/print_ab.go /func f/,
 
 > it can happen that g prints 2 and then 0.
 
+One of the valid executions:
+
+    [store(b, 2), read(b): 2, read(a): 0, store(a, 1)]
+
 * Data races
 
 .code mm/wait_idiom.go /func setup/,
 
 > there is no guarantee that, in doprint, observing the write to done implies observing the write to a. This version can (incorrectly) print an empty string instead of "hello, world".
+
+One of the valid executions:
+
+    [store(done, true), read(done), read(a): "", store(a, "...")]
 
 * Data races
 
