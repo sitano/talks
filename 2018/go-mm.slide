@@ -6,6 +6,37 @@ Ivan Prisyazhnyy
 Software Engineer
 @JohnKoepi
 
+: talk: Good day!
+: talk: How is everybody doing today?
+: talk: ...
+: talk: Cool!
+: talk: ...
+: talk: My name is Ivan and I am here today to talk to you about
+: talk: Go memory model, and more specifically the importance of
+: talk: the memory model, why do we need one, how to understand it
+: talk: and how to apply it.
+: talk:
+: talk: You will also know what are data races, what memory models
+: talk: exists, how it is implemented, what are incorrectly synchronized
+: talk: programs and how to detect data races.
+: talk:
+: talk: The talk consists of the three parts:
+: talk: 1) First one introduces a memory models and answers the
+: talk:    question WHY. WHY SHOULD YOU CARE ABOUT A MEMORY MODEL?
+: talk:    Why Go needs memory model at all. What memory models
+: talk:    exists. What are hardware memory models. What compilers do.
+: talk: 2) Second part introduces memory models THEORY.
+: talk:    You will know how memory models are defined, what they
+: talk:    consists of, how the model reflects the program and its
+: talk:    states. It's about a happens-before, consistency and DRF.
+: talk: 3) And in the third one you will get a glimpse of the details
+: talk:    of the MEMORY MODEL in GO. What it is based on? What it
+: talk:    describes and how. Is it a full spec or not? How atomics
+: talk:    works.
+: talk: 4) In top secret part four there will be examples of data
+: talk:    races and bad synchronization examples. And then few words
+: talk:    on the RACE DETECTION and `tsan` implementation.
+
 * Opinions are my own
 
 Anything on this or any subsequent slides may be a lie. Do
@@ -15,6 +46,9 @@ not base your decisions on this talk.
 
 : Do you like statements when people do not hold any responsibility?
 
+: talk: Anything on this or any subsequent slides may be a lie. Do
+: talk: not base your decisions on this talk.
+
 * A memory model?
 
 A thing from
@@ -22,6 +56,9 @@ A thing from
 .link https://golang.org/ref/mem
 
 version of May 31, 2014
+
+: talk: What is a memory model? Isn't it just a thing documented at this
+: talk: link? version from May 31, 2014.
 
 * How to answer a question:
 
@@ -35,12 +72,31 @@ What is a correct program?
 : The executions outcomes with results. And the executions
 : constitutes program behaviors.
 
+: talk: There is no questions when we are writing single threaded programs.
+: talk: But let's assume we are writing concurrent programs.
+
+: talk: A memory model is a thing that helps to answer a question: what
+: talk: is a correct program? - what executions of the program are valid.
+: talk: To be more precise a memory model allows a developer to write
+: talk: correctly synchronized programs.
+
+: talk: In the context of memory models, programs consists of actions, executed
+: talk: actions constitutes program executions (or execution traces),
+: talk: and the behaviors are the effects of executed actions.
+
+: talk: But, why should we care?
+
 * Why should we care?
 
 .code mm/print_ab.go /START OMIT/,/END OMIT/
 
 - Is that correct program?
 - What are possible outcomes?
+
+: talk: Let's take a look at this code example. Try to guess, is that program
+: talk: correct? What are possible results of this program?
+
+: talk: How to answer such question any way?
 
 * Why should we care?
 
@@ -50,12 +106,21 @@ What is a correct program?
 - What are possible outcomes?
 - Is (2, 0) a possible outcome?
 
+: talk: While answering previous questions, you also have to answer i.e. is
+: talk: (2, 0) outcome is possible. Is it possible? How to understand it?
+
 * Why should we care?
 
 .code mm/wait_idiom.go /START OMIT/,/END OMIT/
 
 - Is that correct program?
 - What are possible outcomes?
+
+: talk: Ok, what about this one? Is that program correct? What are possible
+: talk: results of this program?
+
+: talk: So, remember your answers. Now, let's move on to the question:
+: talk: What is a correct program anyway?
 
 * Race Condition
 
@@ -67,29 +132,65 @@ It becomes a bug when events do not happen in the order the programmer intended.
 
 : some kind of external timing or ordering non-determinism
 
+: talk: There is a notion of race condition, which is defined as follows.
+
 * Data Race
 
 "a race condition caused by potentially concurrent operations on a shared memory location, of which at least one is a write."
 
 .link https://en.wikipedia.org/wiki/Race_condition#Software Wikipedia/Software/C++ x11
 
-Race conditions are about _events_, and the data races are about the events of memory  _accesses_.
+: talk: And there is a notion of data race.
+
+* Race Conditions != Data Races,
+
+It's not just race conditions are about _events_, and the data races are about the events of memory  _accesses_.
 
 .link https://blog.regehr.org/archives/490 Race Condition vs. Data Race
 
-Race Conditions != Data Races,
-
-Data Races are bad.
+Data Races are *bad*.
 
 .link https://stackoverflow.com/questions/11276259/are-data-races-and-race-condition-actually-the-same-thing-in-context-of-conc
 
 The correctly synchronized program is data race free.
+
+: talk: The thing is the data races are bad, while race conditions are not
+: talk: always bad. They are confused sometimes, so don't be.
+: talk: The correctly synchronized program is data race free.
+
+* Example of data race and race condition
+
+    var count = 0                       var count = 0
+                                        var m = sync.Mutex{}
+    func incrementCount() {             func set(x int) {
+        if count == 0 {                     m.Lock()
+            count ++                        count = x
+        }                         vs        m.Unlock()
+    }                                   }
+
+    func main() {                       func main() {
+        go incrementCount()                 go set(1)
+        go incrementCount()                 go set(2)
+    }                                   }
+
+- What are possible outcomes?
+- Where is a DR, where is a RC?
+
+: talk: Take a look at following code examples. How do you think, where
+: talk: it is a DR and where it is a RC? Are they equally harmful?
+
+: talk: Both are capable of producing 2 or 1. But are they equally harmful?
 
 * Data Race Free (DRF)
 
 - "A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered",
 - "A program is correctly synchronized if and only if all sequentially consistent executions are free of data races",
 - "If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent".
+
+: talk: Knowing data races are bad we can conclude a notion of a correctly
+: talk: synchronized program. Simply put, its a program that is free of data races.
+: talk: Then all program executions appear to be sequentially consistent and
+: talk: vice versa.
 
 .link https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4 JMM
 
@@ -100,6 +201,8 @@ Sequential Consistency (SC): (def.)
 
 > If a program has no data races, then all executions of the program will appear to be sequentially consistent.
 
+: talk: Where seq. cons. is a situation in which an execution is consistent with PO.
+
 * How can we understand that the program is correct?
 
 Just make it DRF (data race free).
@@ -107,16 +210,23 @@ Just make it DRF (data race free).
 - In order of doing so, you must made it correct under a memory model.
 - Memory models specifies which executions of the program are correct.
 
+: talk: So now we know what is a correctly synchronized program.
+
 * How can we understand that the program is correct?
 
 > Use memory model, Luke.
 
-- which programs are valid
-- what those valid programs can do
+- which programs are correct
+- what those programs can do
 - therefore what programmers can expect
 - therefore what compiler writers must ensure / can do
 
-* But why there are data races in the first place?
+: talk: Memory Model sets our expectations.
+
+* Memory Models
+
+: talk: Let's talk about memory models at different levels.
+: talk: It has happened that there are variety of these.
 
 * A Fairy Tale
 
@@ -135,6 +245,10 @@ Is a hardware or compiler optimization valid?
 
 .html mm/source_dave.html
 
+: talk: In a past good days everything was simple.
+: talk: No multi cores, no multi threading. New hw
+: talk: is valid if it does not change behavior.
+
 * An Evil Twist
 
 Hardware engineer’s magic spells stopped working.
@@ -152,6 +266,11 @@ Now hardware, compiler optimizations change program behaviors.
 - multiple core, caches
 
 .html mm/source_dave.html
+
+: talk: And then, at one moment, everything changed. Hardware guys started to
+: talk: put build multi cores systems. Compilers and OSes gave us multithreaded
+: talk: programming. And since then the new paradigm was the hardware and compilers
+: talk: change program's behavior.
 
 * How can we get along?
 
@@ -484,6 +603,10 @@ Compiled code fails (answers *yes!* to) every litmus test we’ve seen,
 including coherence!
 
 .html mm/source_dave.html
+
+* Compiler Optimizations
+
+> Compiler always expects the programs are DRF
 
 * Compiler Optimizations
 
