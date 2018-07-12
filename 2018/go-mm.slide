@@ -1026,6 +1026,31 @@ Consistency Rules:
 
 .html mm/source_alex.html
 
+* Acausality of Happens-Before
+
+Happens-before by itself is insufficient to define program semantics:
+Java Memory Model (2005) adds separate rules to define valid executions.
+
+“Prohibiting such causality violations in a way that does not also prohibit other
+desired optimizations turned out to be surprisingly difficult. … After many
+proposals and five years of spirited debate, the current model was approved as
+the best compromise. … Unfortunately, this model is very complex, was known to
+have some surprising behaviors, and has recently been shown to have a bug.”
+
+— Adve and Boehm, “Memory Models: A Case for Rethinking Parallel Languages and Hardware” (2010)
+
+.html mm/source_dave.html
+
+* Causality is Hard
+
+“Disturbingly, 40+ years after the first relaxed-memory hardware
+was introduced (the IBM 370/158MP), the field still does not have
+a credible proposal for the concurrency semantics of any general-purpose
+high-level language that includes high-performance shared-memory
+concurrency primitives.”
+
+- Batty et al, “The Problem of Programming Language Concurrency Semantics” (2015)
+
 * Theory
 
 - A program is correctly synchronized if and only if all sequentially consistent executions are free of data races.
@@ -1082,11 +1107,20 @@ Consistency Rules:
 
 Is something at [[https://golang.org/ref/mem][golang/mem]] a spec?
 
+: talk: Having read what we have at this url let's answer a question
+: talk: is the Go memory model a specification?
+
 * Go
 
 Is something at [[https://golang.org/ref/mem][golang/mem]] a spec?
 
 - No
+
+: talk: It seems like no. There is a notice that concurrent accesses
+: talk: must be serialized, happens-before notion to define whether
+: talk: a program has data race and few rules on the implementation...
+
+: talk: But what the point then?
 
 * What's the point?
 
@@ -1104,30 +1138,34 @@ Explicit concern: Leave room for future refinement, refraining from:
 
 .html mm/source_dave.html
 
-* What we are given?
-
-"The Go memory model specifies the conditions under which reads of a variable in one goroutine can be guaranteed to observe values produced by writes to the same variable in a different goroutine."
-
-Nothing about consistency...
-or data races
-
-"Programs that modify data being simultaneously accessed by multiple goroutines must serialize such access."
-
-because hardware and compiler may do something...
+: talk: The point is to have something to define developers expectations,
+: talk: something to define data races in the program, provide guarantees,
+: talk: allow compiler and hardware to make changes to the programs but still
+: talk: to keep room for future refinement.
 
 * How to serialize access?
 
 Use happens-before:
 
-- PO
-- HB
-- SO, SO-PO
+- HB, SW
+- PO, SO, SO-PO
+
+: talk: Go memory model defines happen-before order of the events to
+: talk: define which reads sees what writes. There is an PO order mentioned
+: talk: and synchronization with relation. Implicitly SW induces
+: talk: SO and SO-PO orderings.
+
+: talk: HB consistency - r is guaranteed to observe w if both of the following hold:
+: talk: w happens before r, any other write to the shared variable v either
+: talk: happens before w or after r (no interleaving writes).
+
+: talk: And that's it.
 
 * What Synchronization-With order do we have?
 
     package q
 
-    func init() {}  <-hb-\
+    func init() {}  --hb-\
                          |
     ---                  |
                          |
@@ -1135,7 +1173,7 @@ Use happens-before:
                          |
     import "q"           |
                          |
-    func init() {}   ----/
+    func init() {}  <----/
 
 
 - If p imports q, q’s init happens before p’s.
@@ -1145,17 +1183,22 @@ Valid executions:
 
     [q.init..., p.init...]
 
+: talk: Package import action induces a synchronized with relation between
+: talk: participating packages between their `init` function, so that in
+: talk: this example package p imports package q what induces hb relation
+: talk: q.init < p.init (q.init -hb> p.init).
+
 * What Synchronization-With order do we have?
 
     var a string
 
     func f() {
-        print(a)    ---hb---\
+        print(a)    <--hb---\
     }                       |
                             |
     func hello() {          |
         a = "hello, world"  |
-        go f()      <-------/
+        go f()      --------/
     }
 
 - The go statement happens before the created goroutine’s execution
@@ -1164,19 +1207,24 @@ Valid executions:
 
     [store(a, "hello, world"), read(a): "hello, world"]
 
+: talk: `go` statement induces synchronized with relation between the `go`
+: talk: action and the first action of the goroutine such that goroutine
+: talk: scheduling happens before any first actions of the goroutine.
+: talk: The thing is the goroutine termination does not set any SW edge.
+
 * What Synchronization-With order do we have?
 
     var c = make(chan int, 10)
     var a string
 
     func f() {
-        a = "hello, world" -\
-        c <- 0  <---------- | -\
+        a = "hello, world"<-\
+        c <- 0  ----------- | -\
     }                      hb  |
                             |  |
     func main() {           |  |
-        go f()  <-----------/  |
-        <-c     ----hb---------/
+        go f()  ------------/  |
+        <-c     <---hb---------/
         print(a)
     }
 
@@ -1185,6 +1233,10 @@ Valid executions:
 Valid executions:
 
     [store(a, "..."), send(c, 0), recv(c): 0, read(a): "..."]
+
+: talk: A channel write induces synchronized with relation between channel
+: talk: write and channel read such that channel send (or close) happens before
+: talk: the receive.
 
 * What Synchronization-With order do we have?
 
@@ -1209,13 +1261,25 @@ Valid executions:
 
     [lock(l), store(a, "..."), unlock(l), lock(l), read(a): "..."]
 
+: talk: A mutex lock has a synchronization with relation to the unclock
+: talk: such that unlocks happens before subsequent locks.
+
 * Hmmm...
+
+: talk: And that's it. What is strange here?
+
+: talk: The SW edges are defined not with an actions of the abstract machine
+: talk: but with a specific runtime implementation synchronization primitives.
 
 > Unlock happens before subsequent Lock
 
 * How the Mutex works as a memory barrier?
 
 SW is given in terms of language derivatives.
+
+: talk: There is also nothing about Causality guarantees while having HB.
+
+: talk: Let's take a look how the mutexes are implemented then.
 
 * How the Mutex is implemented?
 
@@ -1230,13 +1294,25 @@ SW is given in terms of language derivatives.
 
 sync/mutex is implemented with sync/atomic only.
 
+: talk: Mutexes are implemented with a sync/atomic operations only.
+: talk: But where is atomics spec in the memory model? But if there are
+: talk: no any spec on the well-formed executions then the primitives
+: talk: them selves must work as a memory barriers and the compiler must
+: talk: not changed program behaviors (because he does not know).
+
 * How the Mutex works as a memory barrier?
 
 the sync/atomics works as a memory barriers.
 
+: talk: That means that atomics implementation must work as a fence.
+: talk: They must prevent reordering for normal read/writes across the
+: talk: fence borders.
+
 * What about sync/atomic in mm?
 
 ?
+
+: talk: What about sync/atomic in mm?
 
 * What about sync/atomic?
 
@@ -1249,7 +1325,12 @@ Proposal: match Java volatile and C++ memory_order_seq_cst.
 
 .link https://github.com/golang/go/issues/5045 doc: define how sync/atomic interacts with memory model #5045
 
-TODO: examples of atomics litmus tests
+: talk: Package sync/atomic is conspicuously missing.
+: talk: One of the proposals is to match java volatile and c++ memory order seq cst.
+: talk: But the issue is still open. They still didn't decide how strong
+: talk: atomics consistency must be. The @rsc states that the described behavior
+: talk: of the higher order primitives is enough. Yet let's take a look at the
+: talk: atomics implementation.
 
 * How atomics works as a memory barrier?
 
