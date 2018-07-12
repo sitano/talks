@@ -22,17 +22,18 @@ Software Engineer
 : talk:
 : talk: The talk consists of the three parts:
 : talk: 1) First one introduces a memory models and answers the
-: talk:    question WHY. WHY SHOULD YOU CARE ABOUT A MEMORY MODEL?
-: talk:    Why Go needs memory model at all. What memory models
-: talk:    exists. What are hardware memory models. What compilers do.
+: talk:    question WHY SHOULD YOU CARE ABOUT A MEMORY MODEL?
+: talk:    Why do we need another level of abstraction on top of the
+: talk:    hardware? Why compiler can't manage multithreading him self?
+: talk:    How to understand if the program is correctly synchronized?
 : talk: 2) Second part introduces memory models THEORY.
-: talk:    You will know how memory models are defined, what they
+: talk:    You will learn how to define a memory model, what they
 : talk:    consists of, how the model reflects the program and its
 : talk:    states. It's about a happens-before, consistency and DRF.
-: talk: 3) And in the third one you will get a glimpse of the details
-: talk:    of the MEMORY MODEL in GO. What it is based on? What it
+: talk: 3) In the third one you will get a glimpse of the details
+: talk:    of the GO MEMORY MODEL. What it is based on? What it
 : talk:    describes and how. Is it a full spec or not? How atomics
-: talk:    works.
+: talk:    works?
 : talk: 4) In top secret part four there will be examples of data
 : talk:    races and bad synchronization examples. And then few words
 : talk:    on the RACE DETECTION and `tsan` implementation.
@@ -64,9 +65,10 @@ version of May 31, 2014
 
 What is a correct program?
 
-- Execution traces - histories of actions,
-- [[https://en.oxforddictionaries.com/definition/behaviour][Behaviors]] - the ways in which program acts,
-- Outcomes - results.
+Single threaded programs: we are fine.
+Multithreaded programs: executions, actions, behaviors, ordering...
+
+.image mm/whaaaat.jpg
 
 : A program consists of actions which constitutes executions.
 : The executions outcomes with results. And the executions
@@ -75,16 +77,14 @@ What is a correct program?
 : talk: There is no questions when we are writing single threaded programs.
 : talk: But let's assume we are writing concurrent programs.
 
-: talk: A memory model is a thing that helps to answer a question: what
-: talk: is a correct program? - what executions of the program are valid.
-: talk: To be more precise a memory model allows a developer to write
-: talk: correctly synchronized programs.
+: talk: How to understand whether the program is correct?
+: talk: Easy answer - it does not produce counterintuitive behaviors.
 
 : talk: In the context of memory models, programs consists of actions, executed
 : talk: actions constitutes program executions (or execution traces),
 : talk: and the behaviors are the effects of executed actions.
 
-: talk: But, why should we care?
+: talk: Let's take a look at the examples.
 
 * Why should we care?
 
@@ -93,10 +93,9 @@ What is a correct program?
 - Is that correct program?
 - What are possible outcomes?
 
-: talk: Let's take a look at this code example. Try to guess, is that program
-: talk: correct? What are possible results of this program?
+: talk: Try to guess, is that program correct? What are possible results of this program?
 
-: talk: How to answer such question any way?
+: talk: How to answer such question anyway?
 
 * Why should we care?
 
@@ -211,22 +210,30 @@ Just make it DRF (data race free).
 - Memory models specifies which executions of the program are correct.
 
 : talk: So now we know what is a correctly synchronized program.
+: talk: Just bear memory model in mind when writing programs. It
+: talk: sounds so easy.
 
-* How can we understand that the program is correct?
+* Memory Model loves you
 
-> Use memory model, Luke.
+So we are just writing correctly synchronized programs? Sounds so easy.
+
+Memory model:
 
 - which programs are correct
 - what those programs can do
 - therefore what programmers can expect
 - therefore what compiler writers must ensure / can do
 
-: talk: Memory Model sets our expectations.
+: talk: A memory model is a thing that helps to answer a question: what
+: talk: is a correct program? - what executions of the program are valid.
+: talk: To be more precise a memory model allows a developer to write
+: talk: correctly synchronized programs.
+
+: talk: Memory Model sets our expectations and gives us another layer of abstraction.
+: talk: But why do we need another level of abstraction? Why other layers that exists
+: talk: (like hardware or compiler) in-between can't handle the problem them selves?
 
 * History intro
-
-: talk: The question: Why we can't live without another level
-: talk: of abstraction?
 
 : talk: Let's see how different levels of execution affects
 : talk: program behaviors.
@@ -807,29 +814,51 @@ Memory model:
 .link https://en.wikipedia.org/wiki/Memory_model_(programming)
 .link https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4
 
-: talk: A memory model defines which executions of a program are legal. We need
-: talk: a program to be correctly synchronized with respect to the memory model
-: talk: to have expected behaviors (and results).
+: talk: 1) A memory model describes possible behaviors of a program.
+: talk: 2) An implementation is free to produce any code it likes, as long as
+: talk: all resulting executions of a program produce a result that can be
+: talk: predicted by the memory model.
+: talk: 3) in other words: the memory model determines what values can be read
+: talk: at every point in the program.
+
+: talk: How it is doing so?
+
+: talk: A memory model defines which execution traces of a program are legal
+: talk: executions of a program. We need a program to be correctly synchronized
+: talk: with respect to the memory model to ensure only expected behaviors
+: talk: (and results).
 
 : talk: A program is correctly synchronized if and only if all sequentially
 : talk: consistent executions are free of data races. And it works vice versa.
 
-: talk: What are those program executions?
+: talk: But why we are not using seq. con. as our memory model?
+
+: talk: Sequential consistency is a very strong guarantee that is made about
+: talk: visibility and ordering in an execution of a program. If we were to use
+: talk: sequential consistency as our memory model, many of the compiler and
+: talk: processor optimizations that we have discussed would be illegal.
 
 * Theory
 
 - Program => Executions => Outcomes,
-- `Program` consists of `Actions`,
-- `Executions` consists of sequential traces of a program `Actions`,
+- `Program` consists of inter/intra-thread `Actions`,
+- `Executions` are possible histories of committed `Actions`,
 - `Behaviours` may be incorrect and counterintuitive if something wrong.
 
-Executions are the behaviors of the abstract machine, not
+Executions are the behaviors of the abstract machine (AM), not
 the behavior of final implementation. They define all possible
 ways the program can possibly execute.
 
-: Executions in JMM:
+: talk: So, we have a program to be executed. A program consists of actions which
+: talk: can be inter or intra thread. Executions define all possible ways the program can
+: talk: possibly execute. Executions consists of execution traces of program actions or
+: talk: histories. Executions are the behaviors of the abstract machine (AM), not the behavior
+: talk: of final implementation. Executions result in an outcomes.
 
-: An execution E is described by a tuple < P, A, po, so, W, V, sw, hb >, comprising:
+: talk: Then the implementation may produce a subset of those executions and the
+: talk: results are the subset of the AM executions outcomes.
+
+    Formaly, an execution E is described by a tuple < P, A, po, so, W, V, sw, hb > (JMM)
 
 : P - a program
 : A - a set of actions
@@ -863,8 +892,7 @@ Executions ≈ Actions ∪ Orders ∪ Consistency Rules
 
 Actions:
 
-- Read (Load)
-- Write (Store)
+- Normal store, load
 - Synchronization actions: volatile rw (seq_cst), acq/rel, lock/unlock, synthetic (first action of the goroutine), actions that start threads/goroutines or destroys thema
 - External actions
 
@@ -872,9 +900,25 @@ Actions:
 
 - Divergent actions
 
+.html mm/source_alex.html
+
 : Thread divergence actions (§17.4.9). A thread divergence action is only performed by a thread that is in an infinite loop in which no memory, synchronization, or external actions are performed. If a thread performs a thread divergence action, it will be followed by an infinite number of thread divergence actions.
 
 : Thread divergence actions are introduced to model how a thread may cause all other threads to stall and fail to make progress.
+
+: talk: All possible executions are defined by a union of the program actions,
+: talk: orders and consistency rules. There are also various additional
+: talk: constraints like causality, coherence, termination, intra-thread semantics, etc.
+: talk: for executions to be well-formed.
+
+: talk: Actions are constituted of intra and inter thread actions. Usually, spec.
+: talk: requires threads to obey intra-thread semantics. Inter thread actions
+: talk: performed by one thread that can be detected or directly influenced by
+: talk: another thread.
+
+: talk: Inter thread actions consists of normal memory accesses and synchronization
+: talk: actions. Synchronization actions are special types of actions which allows
+: talk: defining -various-types-of-memory-barriers- ordering of the other actions.
 
 * Theory
 
@@ -882,15 +926,31 @@ Executions ≈ Actions ∪ Orders ∪ Consistency Rules
 
 Orders:
 
-- Program Order (PO)
+- Program Order (PO): intra-thread semantics
 
-: Among all the inter-thread actions performed by each thread t, the program order of t is a total order that reflects the order in which these actions would be performed according to the intra-thread semantics of t.
+: Among all the inter-thread actions performed by each thread t, the program order of t is a total order (execution order) that reflects the order in which these actions would be performed according to the intra-thread semantics of t.
 
-- Synchronization Order (SO)
+: talk: First order to be introduced is a Program Order (PO). Among all
+: talk: the inter-thread actions performed by each thread t, the program
+: talk: order of t is a total order (execution order) that reflects the
+: talk: order in which these actions would be performed according to the
+: talk: intra-thread semantics of t.
+
+: talk: In other words PO is an order which is consistent with a program
+: talk: intra-threads semantics.
+
+- Synchronization Order (SO): SA total order + SW relations (SO-PO order)
 
 : A synchronization order is a total order over all of the synchronization actions of an execution. For each thread t, the synchronization order of the synchronization actions (§17.4.2) in t is consistent with the program order (§17.4.3) of t.
 
-- Happens-Before (HB)
+: talk: Next, a synchronization order is a total order over all of the synchronization
+: talk: actions of an execution. For each thread t, the synchronization order of
+: talk: the synchronization actions in t is consistent with the program order of t.
+
+: talk: Synchronization actions induce the synchronized-with relation on actions.
+: talk: The source of a synchronizes-with edge is called a release, and the destination is called an acquire.
+
+- Happens-Before (HB) order
 
 : If we have two actions x and y, we write hb(x, y) to indicate that x happens-before y.
 : If x and y are actions of the same thread and x comes before y in program order, then hb(x, y).
@@ -900,7 +960,29 @@ Orders:
 
 "A set of synchronization edges, S, is sufficient if it is the minimal set such that the transitive closure of S with the program order determines all of the happens-before edges in the execution. This set is unique."
 
+: talk: Two actions can be ordered by a happens-before relationship.
+: talk: If one action happens-before another, then the first is visible to and ordered before the second.
+: talk: HB is a partial order and a transitive closure over a union of PO and SO.
+: talk: A set of synchronization edges, is sufficient if it is the minimal set such
+: talk: that the transitive closure of S with the program order determines all
+: talk: of the happens-before edges in the execution. This set is unique.
+
+: talk: It should be noted that the presence of a happens-before relationship between
+: talk: two actions does not necessarily imply that they have to take place in that
+: talk: order in an implementation. If the reordering produces results consistent
+: talk: with a legal execution, it is not illegal.
+
+: talk: More specifically, if two actions share a happens-before relationship,
+: talk: they do not necessarily have to appear to have happened in that order
+: talk: to any code with which they do not share a happens-before relationship.
+: talk: Writes in one thread that are in a data race with reads in another thread may,
+: talk: for example, appear to occur out of order to those reads.
+
+: talk: The happens-before relation defines when data races take place.
+
 .link https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4 JMM ($17.4.5)
+
+.html mm/source_alex.html
 
 * Theory
 
@@ -910,37 +992,48 @@ Consistency Rules:
 
 : A consistency rule that affects values observed by the actions.
 
-- PO consistency - total order of intra-thread actions. PO is consistent with the source code order in the original program.
+- PO consistency - PO is consistent with the source code order in the original program.
 
 : PO consistency affects the structure of the execution.
 
-- SO consistency - covers all synchronization actions. SO is a total order of all SA.
-- SO - PO consistency - SW = SO + SO-PO. SW => Coherence (reads see only the latest write in). SW is a partial order.
+: talk: PO is a total order for any given thread in isolation. PO consistency is
+: talk: that PO order is consistent with the source code order in the original program.
+: talk: PO consistency affects the structure of the execution.
+
+- SO consistency - reads see only latest writes in SO
+
+: talk: SO is a total order over all synchronization actions. SO consistency is
+: talk: that SO reads see only the latest writes in SO. SO is a consistency rule
+: talk: that affects values observed by the actions.
+
+- SO - PO consistency - SO and PO agree.
+
+: talk: SO and PO agree. PO+SO+SO-PO gives us a coherence.
 
 : Coherence (def.) : The writes to the single memory location appear to be in a total order consistent with program order
 
 - HB consistency - HB is a transitive closure over the union of PO and SW. HB is partial order too.
 
-: HB consistency: reads observe either: the last write in hb order, or any other write, not ordered by hb.
+: talk: HB is a transitive closure over the union of PO and SW. HB is partial order too.
+: talk: HB consistency is that reads in HB order observe either the last write in hb order,
+: talk: or any other write, not ordered by hb.
 
-* Theory
-
-- HB + magic => causality
-- SO ≈ Sequential Consistency
-
-: Sequential Consistency (SC): (def.) «...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»  Sequential Consistency is not always needed:
-
-Sequential Consistency is not always needed:
-
-- Extreme costs to get it in distributed systems
-- Most examples so far were fine with just Release/Acquire!
+: talk: HB + additional requirements provides causality (release - acquire semantics).
 
 : see JMM: Example 17.4.8-1. Happens-before Consistency Is Not Sufficient
+
+: talk: Mutual exclusion accesses guarded with mutexes provides sequential consistency.
+
+.html mm/source_alex.html
 
 * Theory
 
 - A program is correctly synchronized if and only if all sequentially consistent executions are free of data races.
 - If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent
+
+: talk: And finally all this to be able to write correctly synchronized programs
+: talk: in a weakly ordered memory models to not to have a full overhead of
+: talk: reduction a multi threaded program to the sequentially executed single one.
 
 * Why?
 
@@ -968,6 +1061,22 @@ Sequential Consistency is not always needed:
                 mov 1 → (r1)
 
 .html mm/source_alex.html
+
+: talk: An example of where various parts of the memory model stands.
+: talk: As can be seen there are 2 flows in the plot. The upper one
+: talk: reflects possible options and the bottom one reflects the
+: talk: implementation subset.
+
+: talk: It is seen that program has a set of possible executions
+: talk: on specified abstract machine accordingly to the memory
+: talk: model of that machine. Those executions yields a set
+: talk: of related outcomes.
+
+: talk: Then the implementation is happened to be a specific case
+: talk: of all possible variants and produced only part of available
+: talk: executions. Thus the result set is smaller.
+
+: talk: Now let's take a look at what we have in Go with memory model.
 
 * Go
 
