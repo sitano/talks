@@ -1572,11 +1572,39 @@ One of the valid executions:
 
 * Detection of data races
 
-TODO
+- [[http://www.es.mdh.se/pdf_publications/4327.pdf][static]] detectors: flow-based, inferring types constraints graph solvers, model checking
+- dynamic detectors: [[http://www.cis.upenn.edu/~stevez/papers/MPZD17.pdf][vector clocks tracking]] (requires instrumentation), [[http://www.cs.williams.edu/~freund/papers/10-cacm.pdf][FastTrack]]
+- mixed stuff
+
+* TSAN
+
+Go race detector is implemented via [[https://github.com/google/sanitizers/wiki/ThreadSanitizerAlgorithm][TSAN]] which
+is classic vector clock detector.
+
+- it uses CGO to bind to TSAN
+- TSAN is an external LLVM library at http://llvm.org/git/compiler-rt.git (68e1532492f9b3fce0e9024f3c31411105965b11)
+- Go provides callbacks to be called from C code (instruction to source mapping)
+- There are optimizations to call TSAN lib directly (not via std cgo path)
+- Main bindings are in `runtime` package, `runtime/race`
+- Go ships with prebuild TSAN binaries
+- requires ASLR+PIE, mmaps shadow memory, amd64
 
 * Race detector implementation
 
-TODO
+- Go: [[https://github.com/golang/go/blob/master/src/runtime/race.go][race.go]], [[https://github.com/golang/go/blob/master/src/runtime/race_amd64.s][race_amd64.s]]
+- TSAN: [[https://github.com/llvm-mirror/compiler-rt/blob/master/lib/tsan/go/tsan_go.cc][tsan_go.cc]], everything else in RTL, DD
+- Algorithm: 1) instrument all actions with rumtime.raceread, runtime.racewrite... 2) if wrt action to the same location in different threads => compare accessor vector clocks with the scalar clock of the shadow history (to detect invalid ordering (missing happens-before edges)) and update randomly selected shadow state
+- uses ShadowState to track limited history of memory accesses
+- uses MetaMap to track synchronization events
+- uses ThreadState to track thread clocks (kept in g)
+- only accessor clock kept in ShadowState instance
+
+* Race detector evaluation
+
+- No false positives
+- Depends on execution traces (can miss traces)
+- 5x-15x slowdown by CPU
+- 5x-10x memory usage
 
 * Links
 
@@ -1596,6 +1624,13 @@ TODO
 - [[http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/CEGDBEJE.html]]
 - [[https://stackoverflow.com/questions/21535058/arm64-ldxr-stxr-vs-ldaxr-stlxr]]
 - [[http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.den0024a/ch06s03s11.html][ARM Cortext-A > Multi-processing systems > Synchronization]]
+
+* Links
+
+- https://github.com/google/sanitizers/wiki/ThreadSanitizerAlgorithm
+- https://github.com/google/sanitizers/wiki/ThreadSanitizerPopularDataRaces
+- https://github.com/golang/go/blob/master/src/runtime/race.go
+- http://llvm.org/git/compiler-rt.git
 
 * Quotes
 
