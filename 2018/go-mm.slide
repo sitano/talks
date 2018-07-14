@@ -121,6 +121,13 @@ Multithreaded programs: executions, actions, behaviors, ordering...
 : talk: So, remember your answers. Now, let's move on to the question:
 : talk: What is a correct program anyway?
 
+* Sequential Consistency
+
+Sequential Consistency (SC): (def.)
+«...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»
+
+: talk: First of all, we want executions to be consistent with some sequential program execution.
+
 * Race Condition
 
 "A race condition is the behavior of the system where the output
@@ -174,6 +181,7 @@ The correctly synchronized program is data race free.
 
 - What are possible outcomes?
 - Where is a DR, where is a RC?
+- "A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered",
 
 : talk: Take a look at following code examples. How do you think, where
 : talk: it is a DR and where it is a RC? Are they equally harmful?
@@ -188,19 +196,9 @@ The correctly synchronized program is data race free.
 
 : talk: Knowing data races are bad we can conclude a notion of a correctly
 : talk: synchronized program. Simply put, its a program that is free of data races.
-: talk: Then all program executions appear to be sequentially consistent and
-: talk: vice versa.
+: talk: Then all program sequentially consistent executions are free data races.
 
 .link https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4 JMM
-
-* Sequential Consistency
-
-Sequential Consistency (SC): (def.)
-«...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»
-
-> If a program has no data races, then all executions of the program will appear to be sequentially consistent.
-
-: talk: Where seq. cons. is a situation in which an execution is consistent with PO.
 
 * How can we understand that the program is correct?
 
@@ -612,7 +610,7 @@ On ARM/POWER: *yes*!
 .html mm/source_dave.html
 
 : talk: And thats an example of how coherence properties are different for these
-; talk: architectures.
+: talk: architectures.
 
 * 3. Weak Ordering
 
@@ -1634,4 +1632,6 @@ is classic vector clock detector.
 
 * Quotes
 
-TODO: ...
+> the whole formalism of happens-before exists in order to define precisely the terms under which sequentially inconsistent executions can maintain an illusion of sequential consistency.
+
+.link https://stackoverflow.com/questions/12018369/whats-sequentially-consistent-executions-are-free-of-data-races/12018485#12018485 by Marko Topolnik from Aug 18 '12 at 12:18
