@@ -12,31 +12,30 @@ Software Engineer
 : talk: Cool!
 : talk: ...
 : talk: My name is Ivan and I am here today to talk to you about
-: talk: Go memory model, and more specifically the importance of
-: talk: the memory model, why do we need one, how to understand it
-: talk: and how to apply it.
+: talk: Go memory model, and more specifically why do we need one,
+: talk: how to understand it and how to apply it.
 : talk:
-: talk: You will also know what are data races, what memory models
-: talk: exists, how it is implemented, what are incorrectly synchronized
+: talk: You will also know what are data races, what kinds of memory models
+: talk: exists, how Go MM is implemented, what are incorrectly synchronized
 : talk: programs and how to detect data races.
 : talk:
 : talk: The talk consists of the three parts:
 : talk: 1) First one introduces a memory models and answers the
 : talk:    question WHY SHOULD YOU CARE ABOUT A MEMORY MODEL?
 : talk:    Why do we need another level of abstraction on top of the
-: talk:    hardware? Why compiler can't manage multithreading him self?
-: talk:    How to understand if the program is correctly synchronized?
-: talk: 2) Second part introduces memory models THEORY.
-: talk:    You will learn how to define a memory model, what they
-: talk:    consists of, how the model reflects the program and its
+: talk:    hardware? Why compiler can't manage multithreading alone?
+: talk:    What is correctly synchronized program?
+: talk: 2) Second part retrospects parts of the memory models THEORY.
+: talk:    You will learn a general way of how a memory models are defined,
+: talk:    what they are consists of, how the model reflects the program and its
 : talk:    states. It's about a happens-before, consistency and DRF.
 : talk: 3) In the third one you will get a glimpse of the details
 : talk:    of the GO MEMORY MODEL. What it is based on? What it
 : talk:    describes and how. Is it a full spec or not? How atomics
-: talk:    works?
-: talk: 4) In top secret part four there will be examples of data
-: talk:    races and bad synchronization examples. And then few words
-: talk:    on the RACE DETECTION and `tsan` implementation.
+: talk:    works? There are will be an examples of the data races and
+: talk:    under synchronized programs.
+: talk: 4) Part four will tell a few words on the RACE DETECTION and
+: talk:    `tsan` implementation.
 
 * Opinions are my own
 
@@ -44,8 +43,6 @@ Anything on this or any subsequent slides may be a lie. Do
 not base your decisions on this talk.
 
 .link https://golang.org/ref/mem#tmp_1 don't be clever advice
-
-: Do you like statements when people do not hold any responsibility?
 
 : talk: Anything on this or any subsequent slides may be a lie. Do
 : talk: not base your decisions on this talk.
@@ -59,30 +56,30 @@ A thing from
 version of May 31, 2014
 
 : talk: What is a memory model? Isn't it just a thing documented at this
-: talk: link? version from May 31, 2014.
+: talk: link? version from May 31, 2014. Yes, and so what.
 
 * How to answer a question:
 
 What is a correct program?
 
-Single threaded programs: we are fine.
-Multithreaded programs: executions, actions, behaviors, ordering...
+Single threaded programs: we are fine - programs are sequential.
+Multithreaded programs: different types of parallelism we must handle.
 
 .image mm/whaaaat.jpg
 
-: A program consists of actions which constitutes executions.
-: The executions outcomes with results. And the executions
-: constitutes program behaviors.
-
 : talk: There is no questions when we are writing single threaded programs.
-: talk: But let's assume we are writing concurrent programs.
+: talk: But let's assume we are writing programs that exploit parallelism.
+: talk: There are 3 different kinds of parallelism: task, memory, and instructions.
+: talk: Programmers are given different synchronization and orderding
+: talk: constructions to make use of available hardware parallelism. But
+: talk: it's usage is hard. It's easy to miss something even in some very
+: talk: obvious parts. People tend to under synchronize or over synchronize
+: talk: their code what leads to an errors, invalid results, counterintuitive
+: talk: behavior or excessive performance overheads. So it's important
+: talk: to use weakest ordering modes possible correctly.
 
-: talk: How to understand whether the program is correct?
-: talk: Easy answer - it does not produce counterintuitive behaviors.
-
-: talk: In the context of memory models, programs consists of actions, executed
-: talk: actions constitutes program executions (or execution traces),
-: talk: and the behaviors are the effects of executed actions.
+: talk: How to understand whether the program is correctly synchronized?
+: talk: Easy answer - it does not produce invalid behaviors ever.
 
 : talk: Let's take a look at the examples.
 
