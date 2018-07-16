@@ -63,7 +63,7 @@ version of May 31, 2014
 What is a correct program?
 
 Single threaded programs: we are fine - programs are sequential.
-Multithreaded programs: different types of parallelism we must handle.
+Multithreaded programs: different types of parallelism we must handle: task, mem, inst.
 
 .image mm/whaaaat.jpg
 
@@ -72,29 +72,28 @@ Multithreaded programs: different types of parallelism we must handle.
 : talk: There are 3 different kinds of parallelism: task, memory, and instructions.
 : talk: Programmers are given different synchronization and orderding
 : talk: constructions to make use of available hardware parallelism. But
-: talk: it's usage is hard. It's easy to miss something even in some very
+: talk: correct usage is hard. It's easy to miss something even in some very
 : talk: obvious parts. People tend to under synchronize or over synchronize
-: talk: their code what leads to an errors, invalid results, counterintuitive
+: talk: their code that leads to errors, invalid results, counterintuitive
 : talk: behavior or excessive performance overheads. So it's important
 : talk: to use weakest ordering modes possible correctly.
 
 : talk: How to understand whether the program is correctly synchronized?
 : talk: Easy answer - it does not produce invalid behaviors ever.
 
-: talk: Let's take a look at the examples.
+: talk: Try to guess, are the following programs correctly synchronized?
 
-* Why should we care?
+* 1. Why should we care?
 
 .code mm/print_ab.go /START OMIT/,/END OMIT/
 
 - Is that correct program?
 - What are possible outcomes?
 
-: talk: Try to guess, is that program correct? What are possible results of this program?
+: talk: Is that program correct? What are possible results of this program?
+: talk: How to answer such a questions anyway?
 
-: talk: How to answer such question anyway?
-
-* Why should we care?
+* 1+. Why should we care?
 
 .code mm/print_ab.go /START OMIT/,/END OMIT/
 
@@ -105,27 +104,34 @@ Multithreaded programs: different types of parallelism we must handle.
 : talk: While answering previous questions, you also have to answer i.e. is
 : talk: (2, 0) outcome is possible. Is it possible? How to understand it?
 
-* Why should we care?
+* 2. Why should we care?
 
 .code mm/wait_idiom.go /START OMIT/,/END OMIT/
 
 - Is that correct program?
 - What are possible outcomes?
 
-: talk: Ok, what about this one? Is that program correct? What are possible
+: talk: What about this one? Is that program correct? What are possible
 : talk: results of this program?
 
 : talk: So, remember your answers. Now, let's move on to the question:
-: talk: What is a correct program anyway?
+: talk: How to understand whether a multithread program is correctly synchronized?
 
 * Sequential Consistency
 
 Sequential Consistency (SC): (def.)
 «...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»
 
-: talk: First of all, we want executions to be consistent with some sequential program execution.
+- equivalent results
+- total order of actions, atomicity, visibility
+- stronger consistency / mode => less parallelism
+- weaker consistency => more parallelism
 
-* Race Condition
+: talk: First of all, we want executions results to be consistent with some sequential program execution. Sequential consistency is a very strong guarantee that is made about visibility and ordering in an execution of a program. Within a sequentially consistent execution, there is a total order over all individual actions (such as reads and writes) which is consistent with the order of the program, and each individual action is atomic and is immediately visible to every thread.
+
+: talk: Because stronger modes impose more ordering constraints, they reduce potential parallelism, in at least one of the above senses -- if operations are performed in parallel, ordering may require that one activity block (reducing total parallelism and adding overhead) waiting for completion of another. Ordering may also provide guarantees that programs rely on.
+
+* Race Condition is not we are looking for
 
 "A race condition is the behavior of the system where the output
 is dependent on the sequence or timing of other uncontrollable events.
@@ -155,8 +161,6 @@ Data Races are *bad*.
 
 .link https://stackoverflow.com/questions/11276259/are-data-races-and-race-condition-actually-the-same-thing-in-context-of-conc
 
-The correctly synchronized program is data race free.
-
 : talk: The thing is the data races are bad, while race conditions are not
 : talk: always bad. They are confused sometimes, so don't be.
 : talk: The correctly synchronized program is data race free.
@@ -185,11 +189,11 @@ The correctly synchronized program is data race free.
 
 : talk: Both are capable of producing 2 or 1. But are they equally harmful?
 
-* Data Race Free (DRF)
+* Data Race Free (DRF) programs imposes SC
 
-- "A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered",
-- "A program is correctly synchronized if and only if all sequentially consistent executions are free of data races",
-- "If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent".
+1. "A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered",
+2. "A program is correctly synchronized if and only if all sequentially consistent executions are free of data races",
+3. "If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent".
 
 : talk: Knowing data races are bad we can conclude a notion of a correctly
 : talk: synchronized program. Simply put, its a program that is free of data races.
@@ -199,14 +203,13 @@ The correctly synchronized program is data race free.
 
 * How can we understand that the program is correct?
 
-Just make it DRF (data race free).
+Just make it race-free.
 
 - In order of doing so, you must made it correct under a memory model.
 - Memory models specifies which executions of the program are correct.
 
-: talk: So now we know what is a correctly synchronized program.
-: talk: Just bear memory model in mind when writing programs. It
-: talk: sounds so easy.
+: talk: So now we've got an idea of what is a correctly synchronized program.
+: talk: Just bear memory model in mind when writing programs. It sounds so easy.
 
 * Memory Model loves you
 
@@ -219,12 +222,16 @@ Memory model:
 - therefore what programmers can expect
 - therefore what compiler writers must ensure / can do
 
-: talk: A memory model is a thing that helps to answer a question: what
-: talk: is a correct program? - what executions of the program are valid.
-: talk: To be more precise a memory model allows a developer to write
-: talk: correctly synchronized programs.
+: talk: A memory model is a model which describes semantics of the memory of the
+: talk: abstract machine by defining various memory ordering modes, synchronization
+: talk: constructs and consistency rules. It allows to effectively abstract a program
+: talk: from the hardware implementation to exploit its parallelism capabilities and
+: talk: in the meantime to reason about program correctness and behaviors.
+:
+: talk: It can answer question: what executions of the program are valid and
+: talk: defines some notion of correctly synchronized program. Going from that
+: talk: compilers are free to perform optimizations to the programs that obey SM.
 
-: talk: Memory Model sets our expectations and gives us another layer of abstraction.
 : talk: But why do we need another level of abstraction? Why other layers that exists
 : talk: (like hardware or compiler) in-between can't handle the problem them selves?
 
