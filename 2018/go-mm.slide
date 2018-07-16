@@ -227,7 +227,7 @@ Memory model:
 : talk: constructs and consistency rules. It allows to effectively abstract a program
 : talk: from the hardware implementation to exploit its parallelism capabilities and
 : talk: in the meantime to reason about program correctness and behaviors.
-:
+
 : talk: It can answer question: what executions of the program are valid and
 : talk: defines some notion of correctly synchronized program. Going from that
 : talk: compilers are free to perform optimizations to the programs that obey SM.
