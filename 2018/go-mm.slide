@@ -761,7 +761,8 @@ including coherence!
 : talk: they are working upon.
 
 : talk: Compilers have significant freedom to rewrite code and they have
-: talk: significant gaps in knowledge of execution.
+: talk: significant gaps in knowledge of execution. Compiled code fails
+: talk: (answers *yes!* to) every litmus test we’ve seen, including coherence!
 
 * Compiler Optimizations
 
@@ -800,7 +801,7 @@ model.”
 : talk: And as a result the ideas on weak ordering with respect to the DRF-SC
 : talk: on a hardware can be transposed to the programming language / compiler.
 
-: talk: Ok, how do we define a language memory model?
+: talk: Now, how do we define a language memory model in general?
 
 * Theory
 
