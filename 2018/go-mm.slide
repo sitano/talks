@@ -47,23 +47,16 @@ not base your decisions on this talk.
 : talk: Anything on this or any subsequent slides may be a lie. Do
 : talk: not base your decisions on this talk.
 
-* A memory model?
+* What is a memory model?
 
-A thing from
-
-.link https://golang.org/ref/mem
-
-version of May 31, 2014
-
-: talk: What is a memory model? Isn't it just a thing documented at this
-: talk: link? version from May 31, 2014. Yes, and so what.
+: talk: What is a memory model and why do we need one?
 
 * How to answer a question:
 
-What is a correct program?
+Uniprocessors : we are fine - programs are sequential.
+Multicores : different types of parallelism we must handle: task, mem, inst.
 
-Single threaded programs: we are fine - programs are sequential.
-Multithreaded programs: different types of parallelism we must handle: task, mem, inst.
+What is a correct program?
 
 .image mm/whaaaat.jpg
 
@@ -124,8 +117,8 @@ Sequential Consistency (SC): (def.)
 
 - equivalent results
 - total order of actions, atomicity, visibility
-- stronger consistency / mode => less parallelism
-- weaker consistency => more parallelism
+
+We want weaker consistency => more potential parallelism.
 
 : talk: First of all, we want executions results to be consistent with some sequential program execution. Sequential consistency is a very strong guarantee that is made about visibility and ordering in an execution of a program. Within a sequentially consistent execution, there is a total order over all individual actions (such as reads and writes) which is consistent with the order of the program, and each individual action is atomic and is immediately visible to every thread.
 
@@ -192,8 +185,8 @@ Data Races are *bad*.
 * Data Race Free (DRF) programs imposes SC
 
 1. "A program must be correctly synchronized to avoid the kinds of counterintuitive behaviors that can be observed when code is reordered",
-2. "A program is correctly synchronized if and only if all sequentially consistent executions are free of data races",
-3. "If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent".
+2. "If a program is correctly synchronized, then all executions of the program will appear to be sequentially consistent".
+3. "A program is correctly synchronized if and only if all sequentially consistent executions are free of data races",
 
 : talk: Knowing data races are bad we can conclude a notion of a correctly
 : talk: synchronized program. Simply put, its a program that is free of data races.
@@ -362,7 +355,7 @@ Multiprocess Programs” (1979)
 : talk: One might expect multiprocessors to have sequentially consistent (SC) shared memory.
 
 : talk: Seq. Con. is a strongest guarantee. By def. it is an approach in designing computer
-: talk: programs such that all of its executions *appears* equivalent to some sequential
+: talk: programs such that all of its executions are equivalent to some idealized
 : talk: execution consistent with the program order of instructions. or in other words all
 : talk: RWS are in-order.
 
@@ -488,7 +481,7 @@ On x86 (or other TSO): *yes*!
     ----------------------
       x = 1   |  y = 1
       *fence* |  *fence*
-      r1 = 1  |  r2 = x
+      r1 = y  |  r2 = x
 
 Can this program see r1 = 1, r2 = 0? No.
 
@@ -647,9 +640,9 @@ model.”
 
 .link http://pages.cs.wisc.edu/~markhill/papers/isca90_drf0.pdf Adve and Hill, “Weak Ordering - A New Definition” (1990)
 
-: talk: Next question is how to apply these ideas about weak ordering to the
-: talk: software memory models? Here is a new definition of the weak ordering
-: talk: given by the Adve and Hill.
+: talk: In 1990 a new definition of the weak ordering was given by the Adve and Hill.
+: talk: Since then modern processor architecture uses various types of weak ordering.
+: talk: And correctly synchronized programs appears to be SC.
 
 : talk: “Let a synchronization model be a set of constraints on memory accesses that specify how and when synchronization needs to be done. Hardware is weakly ordered with respect to a synchronization model if and only if it appears sequentially consistent to all software that obey the synchronization model.”
 
@@ -722,8 +715,8 @@ sequentially consistent to all software that obey [DRF].”
 
 .html mm/source_dave.html
 
-: talk: that single threads dependencies are preserved, coherence is preserved,
-: talk: sync ops to some location have total order, other ops respect sync ops.
+: talk: that intra-threads dependencies are preserved, coherence is preserved,
+: talk: sync ops are recognized, respected and are totally ordered.
 
 * Hardware weakly ordered by DRF
 
@@ -801,7 +794,8 @@ model.”
 : talk: And as a result the ideas on weak ordering with respect to the DRF-SC
 : talk: on a hardware can be transposed to the programming language / compiler.
 
-: talk: Now, how do we define a language memory model in general?
+: talk: Now, let's take a look on how a memory model for an language abstract
+: talk: machine can be defined.
 
 * Theory
 
