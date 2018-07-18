@@ -110,20 +110,6 @@ What is a correct program?
 : talk: So, remember your answers. Now, let's move on to the question:
 : talk: How to understand whether a multithread program is correctly synchronized?
 
-* Sequential Consistency
-
-Sequential Consistency (SC): (def.)
-«...the result of any execution is the same as if the operations of all the processors were executed in some sequential order, and the operations of each individual processor appear in this sequence in the order specified by its program»
-
-- equivalent results
-- total order of actions, atomicity, visibility
-
-We want weaker consistency => more potential parallelism.
-
-: talk: First of all, we want executions results to be consistent with some sequential program execution. Sequential consistency is a very strong guarantee that is made about visibility and ordering in an execution of a program. Within a sequentially consistent execution, there is a total order over all individual actions (such as reads and writes) which is consistent with the order of the program, and each individual action is atomic and is immediately visible to every thread.
-
-: talk: Because stronger modes impose more ordering constraints, they reduce potential parallelism, in at least one of the above senses -- if operations are performed in parallel, ordering may require that one activity block (reducing total parallelism and adding overhead) waiting for completion of another. Ordering may also provide guarantees that programs rely on.
-
 * Race Condition is not we are looking for
 
 "A race condition is the behavior of the system where the output
@@ -190,7 +176,7 @@ Data Races are *bad*.
 
 : talk: Knowing data races are bad we can conclude a notion of a correctly
 : talk: synchronized program. Simply put, its a program that is free of data races.
-: talk: Then all program sequentially consistent executions are free data races.
+: talk: Then all program sequentially consistent executions are free of data races.
 
 .link https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4 JMM
 
@@ -214,6 +200,8 @@ Memory model:
 - what those programs can do
 - therefore what programmers can expect
 - therefore what compiler writers must ensure / can do
+
+We want weaker consistency => more potential parallelism.
 
 : talk: A memory model is a model which describes semantics of the memory of the
 : talk: abstract machine by defining various memory ordering modes, synchronization
@@ -354,13 +342,9 @@ Multiprocess Programs” (1979)
 
 : talk: One might expect multiprocessors to have sequentially consistent (SC) shared memory.
 
-: talk: Seq. Con. is a strongest guarantee. By def. it is an approach in designing computer
-: talk: programs such that all of its executions are equivalent to some idealized
-: talk: execution consistent with the program order of instructions. or in other words all
-: talk: RWS are in-order.
+: talk: Sequential consistency is a very strong guarantee that is made about visibility and ordering in an execution of a program. Within a sequentially consistent execution, there is a total order over all individual actions (such as reads and writes) which is consistent with the order of the program, and each individual action is atomic and is immediately visible to every thread. or in other words all RWS are in-order.
 
-: talk: It's important that the relaxation is made at the point where it called appears.
-: talk: Weaker ordering modes allows better trade-offs without given up correctness.
+: talk: Because stronger modes impose more ordering constraints, they reduce potential parallelism, in at least one of the above senses -- if operations are performed in parallel, ordering may require that one activity block (reducing total parallelism and adding overhead) waiting for completion of another. Ordering may also provide guarantees that programs rely on.
 
 : talk: The Seq. Con. is our baseline of the strong consistency for the memory models.
 
@@ -803,6 +787,8 @@ Memory model:
 
 - defines which executions of a program are legal
 - thus, allows to understand which optimizations are correct
+- defines memory accesses ordering modes
+- defines ordering relations: when represented as graphs with events as nodes and relations as links, total orders form linear lists, and partial orders form DAGs -- directed acyclic graphs.
 
 "A program is correctly synchronized if and only if all sequentially consistent executions are free of data races."
 
@@ -828,7 +814,7 @@ Memory model:
 : talk: A program is correctly synchronized if and only if all sequentially
 : talk: consistent executions are free of data races. And it works vice versa.
 
-: talk: But why we are not using seq. con. as our memory model?
+: talk: But why we are just not using seq. con. as our memory model?
 
 : talk: Sequential consistency is a very strong guarantee that is made about
 : talk: visibility and ordering in an execution of a program. If we were to use
@@ -889,8 +875,8 @@ Executions ≈ Actions ∪ Orders ∪ Consistency Rules
 
 Actions:
 
-- Normal store, load
-- Synchronization actions: volatile rw (seq_cst), acq/rel, lock/unlock, synthetic (first action of the goroutine), actions that start threads/goroutines or destroys thema
+- Normal store, load (plain mode)
+- Synchronization actions: volatile store load (seq_cst mode), acq/rel mode actions, lock/unlock (mutual exclusion), synthetic (first action of the goroutine), actions that start threads/goroutines or destroys thema
 - External actions
 
 : External Actions. An external action is an action that may be observable outside of an execution, and has a result based on an environment external to the execution.
@@ -936,7 +922,7 @@ Orders:
 : talk: In other words PO is an order which is consistent with a program
 : talk: intra-threads semantics.
 
-- Synchronization Order (SO): SA total order + SW relations (SO-PO order)
+- Synchronization Order (SO): SA total order + SW relation
 
 : A synchronization order is a total order over all of the synchronization actions of an execution. For each thread t, the synchronization order of the synchronization actions (§17.4.2) in t is consistent with the program order (§17.4.3) of t.
 
@@ -967,7 +953,7 @@ Orders:
 : talk: It should be noted that the presence of a happens-before relationship between
 : talk: two actions does not necessarily imply that they have to take place in that
 : talk: order in an implementation. If the reordering produces results consistent
-: talk: with a legal execution, it is not illegal.
+: talk: with a legal execution, it is not illegal. (according to the def. of weak ordering con.)
 
 : talk: More specifically, if two actions share a happens-before relationship,
 : talk: they do not necessarily have to appear to have happened in that order
@@ -987,7 +973,7 @@ Executions ≈ Actions ∪ Orders ∪ Consistency Rules
 
 Consistency Rules:
 
-: A consistency rule that affects values observed by the actions.
+    > A consistency rule that affects values observed by the actions.
 
 - PO consistency - PO is consistent with the source code order in the original program.
 
@@ -1005,7 +991,7 @@ Consistency Rules:
 
 - SO - PO consistency - SO and PO agree.
 
-: talk: SO and PO agree. PO+SO+SO-PO gives us a coherence.
+: talk: SO - PO consistency is about SO and PO agreement. PO+SO+SO-PO gives us a coherence.
 
 : Coherence (def.) : The writes to the single memory location appear to be in a total order consistent with program order
 
@@ -1023,30 +1009,31 @@ Consistency Rules:
 
 .html mm/source_alex.html
 
-* Acausality of Happens-Before
+* Happens-Before and C4
 
-Happens-before by itself is insufficient to define program semantics:
-Java Memory Model (2005) adds separate rules to define valid executions.
+- Happens-before was defined to specify whether a program has a race.
+- Can it alone be used to specify the possible behaviors of a program? Not quite. HB alone does not provide coherence or causality.
 
-“Prohibiting such causality violations in a way that does not also prohibit other
-desired optimizations turned out to be surprisingly difficult. … After many
-proposals and five years of spirited debate, the current model was approved as
-the best compromise. … Unfortunately, this model is very complex, was known to
-have some surprising behaviors, and has recently been shown to have a bug.”
+Adve and Boehm, “Memory Models: A Case for Rethinking Parallel Languages and Hardware” (2010)
 
-— Adve and Boehm, “Memory Models: A Case for Rethinking Parallel Languages and Hardware” (2010)
+Batty et al, “The Problem of Programming Language Concurrency Semantics” (2015)
 
 .html mm/source_dave.html
 
-* Causality is Hard
+* C4 (Commutativity, Coherence, Causality, Consensus)
 
-“Disturbingly, 40+ years after the first relaxed-memory hardware
-was introduced (the IBM 370/158MP), the field still does not have
-a credible proposal for the concurrency semantics of any general-purpose
-high-level language that includes high-performance shared-memory
-concurrency primitives.”
+- are required
+- some set with additional constraints
+- from which different ordering mode arises of different guarantees
 
-- Batty et al, “The Problem of Programming Language Concurrency Semantics” (2015)
+rule of thumb: usually at least a causality is required to be maintained by the
+synchronization components to be usable for inter-thread communication.
+
+.link http://gee.cs.oswego.edu/dl/html/j9mm.html#summarysec J9MM by Doug Lea
+
+: Opaque mode supports designs relying on coherence: the guarantee that visible overwrites to each variable are ordered, along with associated guarantees about access atomicity and progress, ensures awareness of variables across threads.
+: Release/Acquire mode additionally supports designs relying on causality: strict partial ordering of the antecedence relation enables communication across threads.
+: Volatile mode additionally supports designs relying on consensus: total ordering of accesses enables threads to reach agreement about program states.
 
 * Theory
 
@@ -1057,7 +1044,7 @@ concurrency primitives.”
 : talk: in a weakly ordered memory models to not to have a full overhead of
 : talk: reduction a multi threaded program to the sequentially executed single one.
 
-* Why?
+* How it all applies to the programs
 
     int a = 0
     -----------------
@@ -1106,7 +1093,7 @@ Is something at [[https://golang.org/ref/mem][golang/mem]] a spec?
 
 > "serialize accesses"
 > "happens-before"
-> "synchronized with edges"
+> "dependency edges"
 
 : talk: Having read what we have at this url let's answer a question
 : talk: is the Go memory model a specification?
@@ -1117,9 +1104,11 @@ Is something at [[https://golang.org/ref/mem][golang/mem]] a spec?
 
 > "serialize accesses"
 > "happens-before"
-> "synchronized with edges"
+> "dependency edges"
 
 - No
+
+No correct synchronization notion, nothing about data races...
 
 : talk: It seems like no. There is a notice that concurrent accesses
 : talk: must be serialized, happens-before notion to define whether
@@ -1152,13 +1141,13 @@ Explicit concern: Leave room for future refinement, refraining from:
 
 Order memory accesses:
 
-- Explicitly given: HB, SW = (use sync primitives, channels, and goroutines start)
-- Implicitly implied: PO, SO, SO-PO, coherence, causality, ...
+- Explicitly given: intra-thread semantics preserved, HB, DE = (use sync primitives, channels, and goroutines start)
+- Implicitly implied: PO, SO, SO-PO, commutativity, coherence, causality, consensus.
 
 : talk: Go memory model defines happen-before order of the events to
-: talk: define which reads sees what writes. There is an PO order mentioned
-: talk: and synchronization with relation. Implicitly SW induces
-: talk: SO and SO-PO orderings.
+: talk: define which reads sees what writes. There is also intra-thread
+: talk: semantics and dependency edges. All other properties, orderings
+: talk: and consistency rules are bore in mind.
 
 : talk: HB consistency - r is guaranteed to observe w if both of the following hold:
 : talk: w happens before r, any other write to the shared variable v either
@@ -1280,7 +1269,7 @@ Valid executions:
 
 * How the Mutex works as a memory barrier?
 
-SW is given in terms of language derivatives.
+SW relation is given in terms of runtime library.
 
 : talk: There is also nothing about Causality guarantees while having HB.
 
